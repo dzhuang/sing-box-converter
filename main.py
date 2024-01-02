@@ -66,27 +66,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
     temp_json_data = args.temp_json_data
     config = None
+
     if temp_json_data and temp_json_data != '{}':
         providers = json.loads(temp_json_data)
+
     else:
         providers = load_json('providers.json')  # 加载本地 providers.json
     if providers.get('config_template'):
         config_template_path = providers['config_template'].strip()
         print('选择: \033[33m' + config_template_path + '\033[0m')
-        # print ('Mẫu cấu hình sử dụng: \033[33m' + template_list[uip] + '.json\033[0m')
 
-        if config_template_path.startswith("http"):
-            response = requests.get(providers['config_template'])
-            response.raise_for_status()
-            config = response.json()
-        else:
-            try:
-                with open(config_template_path, "rb") as f:
-                    config = json.loads(f.read())
-            except Exception as e:
-                print(
-                    f"Failed to load {config_template_path}: "
-                    f"{type(e).__name__}: {str(e)}")
     else:
         template_list = list_local_templates()
         if len(template_list) < 1:
@@ -96,10 +85,9 @@ if __name__ == '__main__':
         display_template(template_list)
         uip = select_config_template(
             template_list, selected_template_index=args.template_index)
-        config_template_path = 'config_template/' + template_list[uip] + '.json'
         print('选择: \033[33m' + template_list[uip] + '.json\033[0m')
-        # print ('Mẫu cấu hình sử dụng: \033[33m' + template_list[uip] + '.json\033[0m')
-        config = load_json(config_template_path)
+
+        providers["config_template"] = uip
 
     extractor = NodeExtractor(providers_config=providers, is_console_mode=True)
     # update_local_config('http://127.0.0.1:9090',providers['save_config_path'])

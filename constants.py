@@ -3,3 +3,4 @@ DEFAULT_UA = (
     '(KHTML, like Gecko) Version/16.5 Safari/605.1.15')
 
 DEFAULT_FALLBACK_UA = "clash.meta"
+BUILTIN_TEMPLATE_PATH = 'config_template'

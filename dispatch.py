@@ -15,7 +15,7 @@ from parsers import HttpParser, HttpsParser, HysteriaParser, Hysteria2Parser, \
     VmessParser, WireGuardParser
 from parsers.base import ParserBase
 from parsers.clash2base64 import clash2v2ray
-from constants import DEFAULT_UA, DEFAULT_FALLBACK_UA
+from constants import DEFAULT_UA, DEFAULT_FALLBACK_UA, BUILTIN_TEMPLATE_PATH
 
 protocol_klass_map = {
     "http": HttpParser,
@@ -41,15 +41,20 @@ class NoTemplateConfigured(Exception):
     pass
 
 
+class InvalidTemplate(Exception):
+    pass
+
+
 class FailedToFetchSubscription(Exception):
     pass
 
 
 def list_local_templates():
-    template_dir = 'config_template'  # 配置模板文件夹路径
+    template_dir = BUILTIN_TEMPLATE_PATH  # 配置模板文件夹路径
     template_files = os.listdir(template_dir)  # 获取文件夹中的所有文件
-    _template_list = [os.path.splitext(file)[0] for file in template_files if
-                      file.endswith('.json')]  # 移除扩展名并过滤出以.json结尾的文件
+    _template_list = [
+        os.path.splitext(file)[0] for file in template_files
+        if file.endswith('.json')]  # 移除扩展名并过滤出以.json结尾的文件
     _template_list.sort()  # 对文件名进行排序
     return _template_list
 
@@ -94,17 +99,24 @@ class NodeExtractor:
         try:
             template_index = int(template)
             _template_list = list_local_templates()
+            file_path = (
+                f"{BUILTIN_TEMPLATE_PATH}/{_template_list[template_index]}.json")
 
-            with open(_template_list[template_index], "rb") as _f:
-                json.loads(_f.read())
+            with open(file_path, "rb") as _f:
+                return json.loads(_f.read())
 
         except ValueError:
             pass
 
         if template.startswith("http://") or template.startswith("https://"):  # noqa
-            resp = requests.get(self.providers_config['config_template'])
-            resp.raise_for_status()
-            return resp.json()
+            try:
+                resp = requests.get(self.providers_config['config_template'])
+                resp.raise_for_status()
+                return resp.json()
+            except Exception as e:
+                raise InvalidTemplate(
+                    f"Failed to load template: {template}: "
+                    f"{type(e).__name__}: {str(e)}")
 
         try:
             with open(template, "rb") as f:
@@ -114,15 +126,14 @@ class NodeExtractor:
                 f"Failed to load {template}: "
                 f"{type(e).__name__}: {str(e)}")
 
+        raise NoTemplateConfigured("No valid template configured")
+
     @property
     def nodes(self):
         if self._nodes is None:
             self._nodes = self.process_nodes()
 
         return self._nodes
-
-    def get_providers(self, providers_config):
-        raise NotImplementedError
 
     def get_node_parser(self, node_str):
         proto = tool.get_protocol(node_str)
