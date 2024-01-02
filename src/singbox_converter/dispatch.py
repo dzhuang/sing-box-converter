@@ -103,8 +103,15 @@ class NodeExtractor:
         try:
             template_index = int(template)
             _template_list = list_local_templates()
+
+            current_file_path = os.path.abspath(__file__)
+            current_directory = os.path.dirname(current_file_path)
+
             file_path = (
-                f"{BUILTIN_TEMPLATE_PATH}/{_template_list[template_index]}.json")
+                os.path.join(
+                    current_directory,
+                    BUILTIN_TEMPLATE_PATH,
+                    f"{_template_list[template_index]}.json"))
 
             with open(file_path, "rb") as _f:
                 return json.loads(_f.read())
