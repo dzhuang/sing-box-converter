@@ -5,3 +5,6 @@ chardet
 PyYAML
 ruamel.yaml
 Flask==2.3.2
+isort
+flake8
+jinja2

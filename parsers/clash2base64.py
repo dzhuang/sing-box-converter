@@ -132,9 +132,9 @@ def clash2v2ray(share_link):
             "password": share_link['password'],
             "server": share_link['server'],
             "port": share_link['port'],
-            "allowInsecure": share_link.get('allowInsecure', '1'),
+            "allowInsecure": share_link.get('allowInsecure', '0'),
             "sni": share_link.get('sni', ''),
-            "skip_cert_verify": '1' if share_link.get('skip-cert-verify') else "",
+            "skip-cert-verify": '1' if share_link.get('skip-cert-verify') else "",
             "type": share_link.get('network', 'tcp'),
             "fp": share_link.get('client-fingerprint', ''),
             "alpn": quote(','.join(share_link.get('alpn', '')), 'utf-8'),
@@ -149,7 +149,7 @@ def clash2v2ray(share_link):
                     trojan_info["serviceName"] = server_parts[-2]
                 else:
                     trojan_info["serviceName"] = ''
-            link = "trojan://{password}@{server}:{port}?allowInsecure={allowInsecure}&sni={sni}&skip_cert_verify={skip_cert_verify}&type={type}&serviceName={serviceName}&fp={fp}&alpn={alpn}".format(**trojan_info)
+            link = "trojan://{password}@{server}:{port}?allowInsecure={allowInsecure}&sni={sni}&skip-cert-verify={skip-cert-verify}&type={type}&serviceName={serviceName}&fp={fp}&alpn={alpn}".format(**trojan_info)
         if trojan_info['type'] == 'ws':
             if share_link.get('ws-opts'):
                 trojan_info["path"] = quote(share_link['ws-opts'].get('path', ''), 'utf-8')
@@ -157,9 +157,9 @@ def clash2v2ray(share_link):
             else:
                 trojan_info["path"] = ''
                 trojan_info["host"] = trojan_info["sni"]
-            link = "trojan://{password}@{server}:{port}?allowInsecure={allowInsecure}&sni={sni}&skip_cert_verify={skip_cert_verify}&type={type}&host={host}&path={path}&fp={fp}&alpn={alpn}".format(**trojan_info)
+            link = "trojan://{password}@{server}:{port}?allowInsecure={allowInsecure}&sni={sni}&skip-cert-verify={skip-cert-verify}&type={type}&host={host}&path={path}&fp={fp}&alpn={alpn}".format(**trojan_info)
         if trojan_info['type'] == 'tcp':
-            link = "trojan://{password}@{server}:{port}?allowInsecure={allowInsecure}&sni={sni}&skip_cert_verify={skip_cert_verify}&type={type}&fp={fp}&alpn={alpn}".format(**trojan_info)
+            link = "trojan://{password}@{server}:{port}?allowInsecure={allowInsecure}&sni={sni}&skip-cert-verify={skip-cert-verify}&type={type}&fp={fp}&alpn={alpn}".format(**trojan_info)
         if share_link.get('smux',{}).get('enabled', '') == True:
             trojan_info["protocol"] = share_link['smux']['protocol']
             trojan_info["max_connections"] = share_link['smux'].get('max-connections','')
@@ -242,7 +242,7 @@ def clash2v2ray(share_link):
         link = "hysteria://{server}:{port}?protocol={protocol}&auth={auth}&alpn={alpn}&insecure={allowInsecure}&peer={sni}&upmbps={upmbps}&downmbps={downmbps}&obfs={obfs}#{name}".format(
         server = share_link['server'],
         port = share_link['port'],
-        protocol = share_link.get('port', 'udp'),
+        protocol = share_link.get('protocol', 'udp'),
         auth = share_link.get('auth_str', share_link.get('auth-str')),
         alpn = quote(','.join(share_link.get('alpn', '')), 'utf-8'),
         allowInsecure = '0' if share_link.get('skip-cert-verify', '') == False else '1',
