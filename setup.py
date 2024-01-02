@@ -53,4 +53,8 @@ setup(
         'singbox_converter=singbox_converter.main:main',
     ],
     },
+    package_data={
+        "singbox_converter": [
+            "providers-example.json", "config_template/*.json"]
+    }
 )

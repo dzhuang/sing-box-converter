@@ -1,0 +1,3 @@
+recursive-include singbox_converter/
+include singbox_converter/config_template/*.json
+include singbox_converter/*.json
