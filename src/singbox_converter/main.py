@@ -1,4 +1,5 @@
-import json, tool, requests, sys, argparse
+import json, requests, sys, argparse
+from . import tool
 from .dispatch import NodeExtractor, list_local_templates
 
 
@@ -59,7 +60,7 @@ def parse_json(value):
         raise argparse.ArgumentTypeError(f"Invalid JSON: {value}")
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--temp_json_data', type=parse_json, help='临时内容')
     parser.add_argument('--template_index', type=int, help='模板序号')
@@ -92,3 +93,7 @@ if __name__ == '__main__':
     extractor = NodeExtractor(providers_config=providers, is_console_mode=True)
     # update_local_config('http://127.0.0.1:9090',providers['save_config_path'])
     extractor.export_config()
+
+
+if __name__ == '__main__':
+    main()

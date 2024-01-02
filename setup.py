@@ -50,7 +50,7 @@ setup(
     install_requires=install_requires,
     package_dir={"": "src"},
     entry_points={'console_scripts': [
-        'singbox_converter=singbox_converter:main',
+        'singbox_converter=singbox_converter.main:main',
     ],
     },
 )
