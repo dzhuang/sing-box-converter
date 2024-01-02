@@ -1,8 +1,8 @@
 import json,re,urllib
-from src.singbox_converter import tool
+from .. import tool
 from urllib.parse import parse_qs
 
-from src.singbox_converter.parsers.base import ParserBase
+from .base import ParserBase
 
 
 class SSParser(ParserBase):

@@ -1,5 +1,5 @@
-from src.singbox_converter import tool
-from src.singbox_converter.parsers.base import ParserBase
+from .. import tool
+from .base import ParserBase
 
 
 class SSRParser(ParserBase):

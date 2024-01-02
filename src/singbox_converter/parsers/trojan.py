@@ -1,7 +1,7 @@
 import re
-from src.singbox_converter import tool
+from .. import tool
 from urllib.parse import urlparse, parse_qs, unquote
-from src.singbox_converter.parsers.base import ParserBase
+from .base import ParserBase
 
 
 class TrojanParser(ParserBase):

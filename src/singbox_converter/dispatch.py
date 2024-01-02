@@ -9,13 +9,17 @@ import requests
 import ruamel.yaml
 import yaml
 
-import tool
-from parsers import HttpParser, HttpsParser, HysteriaParser, Hysteria2Parser, \
-    SocksParser, SSParser, SSRParser, TrojanParser, TUICParser, VlessParser, \
-    VmessParser, WireGuardParser
-from parsers.base import ParserBase
-from parsers.clash2base64 import clash2v2ray
-from constants import DEFAULT_UA, DEFAULT_FALLBACK_UA, BUILTIN_TEMPLATE_PATH
+from .tool import (
+    get_protocol, noblankLine, readFile, b64Decode, rename, proDuplicateNodeName,
+    saveFile
+)
+from .parsers import (
+    HttpParser, HttpsParser, HysteriaParser, Hysteria2Parser,
+    SocksParser, SSParser, SSRParser, TrojanParser, TUICParser, VlessParser,
+    VmessParser, WireGuardParser)
+from .parsers.base import ParserBase
+from .parsers.clash2base64 import clash2v2ray
+from .constants import DEFAULT_UA, DEFAULT_FALLBACK_UA, BUILTIN_TEMPLATE_PATH
 
 protocol_klass_map = {
     "http": HttpParser,
@@ -136,7 +140,7 @@ class NodeExtractor:
         return self._nodes
 
     def get_node_parser(self, node_str):
-        proto = tool.get_protocol(node_str)
+        proto = get_protocol(node_str)
 
         excluded_protocols = self.providers_config.get(
             'exclude_protocol', "").split(",")
@@ -184,12 +188,12 @@ class NodeExtractor:
                 share_links.append(clash2v2ray(proxy))
 
             node = '\n'.join(share_links)
-            processed_list = tool.noblankLine(node)
+            processed_list = noblankLine(node)
             return processed_list
         else:
-            data = tool.readFile(file_path)
+            data = readFile(file_path)
             data = bytes.decode(data, encoding='utf-8')
-            data = tool.noblankLine(data)
+            data = noblankLine(data)
             return data
 
     def get_content_from_sub(self, subscribe, max_retries=6):
@@ -203,7 +207,7 @@ class NodeExtractor:
             "hy2://", "wg://", "http2://", "socks://", "socks5://"]
 
         if any(url.startswith(prefix) for prefix in url_schemes):
-            return tool.noblankLine(url)
+            return noblankLine(url)
 
         user_agent = subscribe.get('User-Agent', self.fetch_sub_ua)
 
@@ -220,7 +224,7 @@ class NodeExtractor:
                 response_text = response.text
 
                 if any(response_text.startswith(prefix) for prefix in url_schemes):
-                    response_text = tool.noblankLine(response_text)
+                    response_text = noblankLine(response_text)
                     return response_text
 
                 elif 'proxies' in response_text:
@@ -239,7 +243,7 @@ class NodeExtractor:
                         pass
                 else:
                     try:
-                        response_text = tool.b64Decode(response_text)
+                        response_text = b64Decode(response_text)
                         response_text = response_text.decode(encoding="utf-8")
                     except:
                         pass
@@ -269,12 +273,12 @@ class NodeExtractor:
         url_or_path = subscribe["url"]
 
         if url_or_path.startswith('sub://'):
-            url_or_path = tool.b64Decode(url_or_path[6:]).decode('utf-8')
+            url_or_path = b64Decode(url_or_path[6:]).decode('utf-8')
 
         url_str = urlparse(url_or_path)
         if not url_str.scheme:
             try:
-                _content = tool.b64Decode(url_or_path).decode('utf-8')
+                _content = b64Decode(url_or_path).decode('utf-8')
                 data = self.parse_content(_content)
                 processed_list = []
                 for item in data:
@@ -331,7 +335,7 @@ class NodeExtractor:
         def add_emoji(nodes, _subscribe):
             if _subscribe.get('emoji'):
                 for node in nodes:
-                    node['tag'] = tool.rename(node['tag'])
+                    node['tag'] = rename(node['tag'])
 
         _nodes = {}
 
@@ -350,7 +354,7 @@ class NodeExtractor:
             else:
                 self.console_print('没有在此订阅下找到节点，跳过')
                 # print('Không tìm thấy proxy trong link thuê bao này, bỏ qua')
-        tool.proDuplicateNodeName(_nodes)
+        proDuplicateNodeName(_nodes)
         return _nodes
 
     def set_proxy_rule_dns(self):
@@ -562,7 +566,7 @@ class NodeExtractor:
             else:
                 self.console_print(f"文件不存在，正在保存：\033[33m{path}\033[0m")
                 # print(f"File không tồn tại, đang lưu tại: \033[33m{path}\033[0m")
-            tool.saveFile(path, json.dumps(nodes, indent=2, ensure_ascii=False))
+            saveFile(path, json.dumps(nodes, indent=2, ensure_ascii=False))
         except Exception as e:
             self.console_print(f"保存配置文件时出错：{str(e)}")
             # print(f"Lỗi khi lưu file cấu hình: {str(e)}")
@@ -576,7 +580,7 @@ class NodeExtractor:
                 else:
                     self.console_print(
                         f"文件不存在，正在保存：\033[33m{config_file_path}\033[0m")
-                tool.saveFile(config_file_path,
+                saveFile(config_file_path,
                               json.dumps(nodes, indent=2, ensure_ascii=False))
                 # print(f"配置文件已保存到 {config_file_path}")
             except Exception as e:

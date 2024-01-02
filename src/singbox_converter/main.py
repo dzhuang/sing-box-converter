@@ -1,5 +1,5 @@
 import json, tool, requests, sys, argparse
-from dispatch import NodeExtractor, list_local_templates
+from .dispatch import NodeExtractor, list_local_templates
 
 
 def load_json(path):
