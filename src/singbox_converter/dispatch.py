@@ -6,7 +6,6 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-import ruamel.yaml as yaml
 
 from .tool import (
     get_protocol, noblankLine, readFile, b64Decode, rename, proDuplicateNodeName,
@@ -187,6 +186,8 @@ class NodeExtractor:
             with open(file_path, 'rb') as file:
                 content = file.read()
 
+            import ruamel.yaml as yaml
+
             yaml_data = dict(yaml.safe_load(content))
             share_links = []
 
@@ -234,6 +235,8 @@ class NodeExtractor:
                     return response_text
 
                 elif 'proxies' in response_text:
+                    import ruamel.yaml as yaml
+
                     yaml_content = response.content.decode('utf-8')
                     yaml_obj = yaml.YAML()
                     try:
