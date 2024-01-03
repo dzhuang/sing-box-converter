@@ -16,8 +16,6 @@ pip install git+https://github.com/dzhuang/sing-box-subscribe.git@package
 cp providers-example.json providers.json
 
 vi providers.json
-...
-
 ```
 
 #### Then run

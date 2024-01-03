@@ -19,7 +19,7 @@ setup(
     name='PySingBoxConverter',
     version=singbox_converter.__version__,
     description="SingBox converter, Python",
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     long_description=read('README.md'),
     classifiers=[
         # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
