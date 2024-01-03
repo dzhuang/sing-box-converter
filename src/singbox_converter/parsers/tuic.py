@@ -17,7 +17,7 @@ class TUICParser(ParserBase):
             for k, v in parse_qs(server_info.query).items()
         )
         node = {
-            'tag': server_info.fragment or tool.genName() + '_tuic',
+            'tag': server_info.fragment or tool.generate_random_name() + '_tuic',
             'type': 'tuic',
             'server': re.sub(r"\[|\]", "", _netloc[1].rsplit(":", 1)[0]),
             'server_port': int(re.search(r'\d+', _netloc[1].rsplit(":", 1)[1]).group()),

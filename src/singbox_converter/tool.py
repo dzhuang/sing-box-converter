@@ -1,19 +1,9 @@
-import base64, random, string, re
+import base64
+import random
+import string
+import re
 
-
-def get_encoding(file):
-    import chardet
-    with open(file,'rb') as f:
-        return chardet.detect(f.read())['encoding']
-
-
-def saveFile(path,content):
-    file = open(path, mode='w',encoding='utf-8')
-    file.write(content)
-    file.close()
-
-
-regex_patterns = {
+regex_patterns = {  # noqa
     '🇭🇰': re.compile(r'香港|沪港|呼港|中港|HKT|HKBN|HGC|WTT|CMI|穗港|广港|京港|🇭🇰|HK|Hongkong|Hong Kong|HongKong|HONG KONG'),
     '🇹🇼': re.compile(r'台湾|台灣|臺灣|台北|台中|新北|彰化|台|CHT|HINET|TW|Taiwan|TAIWAN'),
     '🇲🇴': re.compile(r'澳门|澳門|(\s|-)?MO\d*|CTM|MAC|Macao|Macau'),
@@ -159,7 +149,7 @@ regex_patterns = {
 }
 
 
-def rename(input_str):
+def rename_country(input_str):
     for country_code, pattern in regex_patterns.items():
         if input_str.startswith(country_code):
             return country_code + ' ' + input_str[len(country_code):].strip()
@@ -170,49 +160,19 @@ def rename(input_str):
                 return country_code + ' ' + input_str
     return input_str
 
-def urlDecode(str):
-    str = str.strip()
-    str += (len(str)%4)*'='
-    return base64.urlsafe_b64decode(str)
 
-def b64Decode(str):
-    str = str.strip()
-    str += (len(str)%4)*'='
-    return base64.urlsafe_b64decode(str)
+def b64_decode(_str):
+    _str = _str.strip()
+    _str += (len(_str) % 4) * '='
+    return base64.urlsafe_b64decode(_str)
 
-def readFile(path):
-    file = open(path,'rb')
-    content = file.read()
-    file.close()
-    return content
 
-def noblankLine(data):
-    lines = data.splitlines()
-    newdata = ''
-    for index in range(len(lines)):
-        line = lines[index]
-        t = line.strip()
-        if len(t)>0:
-            newdata += t
-            if index+1<len(lines):
-                newdata += '\n'
-    return newdata
-
-def firstLine(data):
-    lines = data.splitlines()
-    for line in lines:
-        line = line.strip()
-        if line:
-            return line
-
-def genName(length=8):
+def generate_random_name(length=8):
     name = ''
     for i in range(length):
         name += random.choice(string.ascii_letters+string.digits)
     return name
 
-def is_ip(str):
-    return re.search(r'^\d+\.\d+\.\d+\.\d+$',str)
 
 def get_protocol(s):
     m = re.search(r'^(.+?)://', s)
@@ -229,33 +189,6 @@ def get_protocol(s):
         return m.group(1)
     return None
 
-def checkKeywords(keywords,str):
-    if not keywords:
-        return False
-    for keyword in keywords:
-        if str.find(keyword)>-1:
-            return True
-    return False
-
-def filterNodes(nodelist,keywords):
-    newlist = []
-    if not keywords:
-        return nodelist
-    for node in nodelist:
-        if not checkKeywords(keywords,node['name']):
-            newlist.append(node)
-        else:
-            print('过滤节点名称 '+node['name'])
-            print('Lọc tên proxy'+node['name'])
-    return newlist
-
-def replaceStr(nodelist,keywords):
-    if not keywords:
-        return nodelist
-    for node in nodelist:
-        for k in keywords:
-            node['name'] = node['name'].replace(k,'').strip()
-    return nodelist
 
 def proDuplicateNodeName(nodes):
     names = []
@@ -268,25 +201,3 @@ def proDuplicateNodeName(nodes):
                 node['tag'] = s+str(index)
                 index += 1
             names.append(node['tag'])
-
-def removeNodes(nodelist):
-    newlist = []
-    temp_list=[]
-    i=0
-    for node in nodelist:
-        _node = {'server':node['server'],'port':node['port']}
-        if _node in temp_list:
-            i+=1
-        else:
-            temp_list.append(_node)
-            newlist.append(node)
-    print('去除了 '+str(i)+' 个重复节点')
-    print('Đã xóa các proxy trùng lặp '+str(i))
-    print('实际获取 '+str(len(newlist))+' 个节点')
-    print('Thực tế nhận được '+str(len(newlist))+' proxy')
-    return newlist
-
-def prefixStr(nodelist,prestr):
-    for node in nodelist:
-        node['name'] = prestr+node['name'].strip()
-    return nodelist

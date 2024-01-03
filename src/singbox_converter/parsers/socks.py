@@ -9,13 +9,13 @@ class SocksParser(ParserBase):
         info = data[:]
         server_info = urlparse(info)
         node = {
-            'tag': unquote(server_info.fragment) or tool.genName() + '_socks',
+            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_socks',
             'type': 'socks',
             "version": "5",
             'udp_over_tcp': {}
         }
         try:
-            netloc = (tool.b64Decode(server_info.netloc)).decode()
+            netloc = (tool.b64_decode(server_info.netloc)).decode()
         except:
             netloc = server_info.netloc
         if '@' in netloc:

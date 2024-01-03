@@ -11,7 +11,7 @@ class SSParser(ParserBase):
         if not param or param.isspace():
             return None
         node = {
-            'tag': tool.genName() + '_shadowsocks',
+            'tag': tool.generate_random_name() + '_shadowsocks',
             'type':'shadowsocks',
             'server':None,
             'server_port':0,
@@ -41,14 +41,14 @@ class SSParser(ParserBase):
         if param.find('v2ray-plugin') > -1:
             if param.find('&', param.find('v2ray-plugin')) > -1:
                 try:
-                    plugin = tool.b64Decode(param[param.find('v2ray-plugin') + 13:param.find('&', param.find('v2ray-plugin'))]).decode('utf-8')
+                    plugin = tool.b64_decode(param[param.find('v2ray-plugin') + 13:param.find('&', param.find('v2ray-plugin'))]).decode('utf-8')
                 except:
                     plugin = urllib.parse.unquote(param[param.find('v2ray-plugin')+15:param.find('&', param.find('v2ray-plugin'))])
                     pairs = [pair.split('=') for pair in plugin.split(';') if '=' in pair and pair.count('=') == 1]
                     plugin = str({key: value for key, value in pairs})
             else:
                 try:
-                    plugin = tool.b64Decode(param[param.find('v2ray-plugin') + 13:]).decode('utf-8')
+                    plugin = tool.b64_decode(param[param.find('v2ray-plugin') + 13:]).decode('utf-8')
                 except:
                     plugin = urllib.parse.unquote(param[param.find('v2ray-plugin')+15:])
                     pairs = [pair.split('=') for pair in plugin.split(';') if '=' in pair and pair.count('=') == 1]
@@ -92,7 +92,7 @@ class SSParser(ParserBase):
             else:
                 return None
             try:
-              matcher = re.match(r'(.*?):(.*)', tool.urlDecode(param).decode('utf-8'))
+              matcher = re.match(r'(.*?):(.*)', tool.b64_decode(param).decode('utf-8'))
               if matcher:
                   node['method'] = matcher.group(1)
                   node['password'] = matcher.group(2)
@@ -106,7 +106,7 @@ class SSParser(ParserBase):
               else:
                   return None
         else:
-            matcher = re.match(r'(.*?):(.*)@(.*):(.*)', tool.urlDecode(param).decode('utf-8'))
+            matcher = re.match(r'(.*?):(.*)@(.*):(.*)', tool.b64_decode(param).decode('utf-8'))
             if matcher:
                 node['method'] = matcher.group(1)
                 node['password'] = matcher.group(2)
@@ -119,9 +119,9 @@ class SSParser(ParserBase):
         if param2.find('shadow-tls') > -1:
             flag = 1
             if param2.find('&', param2.find('shadow-tls')) > -1:
-                plugin = tool.b64Decode(param2[param2.find('shadow-tls') + 11:param2.find('&', param2.find('shadow-tls'))].split('#')[0]).decode('utf-8')
+                plugin = tool.b64_decode(param2[param2.find('shadow-tls') + 11:param2.find('&', param2.find('shadow-tls'))].split('#')[0]).decode('utf-8')
             else:
-                plugin = tool.b64Decode(param2[param2.find('shadow-tls') + 11:].split('#')[0]).decode('utf-8')
+                plugin = tool.b64_decode(param2[param2.find('shadow-tls') + 11:].split('#')[0]).decode('utf-8')
             plugin = eval(plugin.replace('true','True'))
             node['detour'] = node['tag']+'_shadowtls'
             node_tls = {

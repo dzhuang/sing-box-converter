@@ -15,7 +15,7 @@ class Hysteria2Parser(ParserBase):
         if server_info.path:
           server_info = server_info._replace(netloc=server_info.netloc + server_info.path, path="")
         node = {
-            'tag': unquote(server_info.fragment) or tool.genName() + '_hysteria2',
+            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_hysteria2',
             'type': 'hysteria2',
             'server': re.sub(r"\[|\]", "", server_info.netloc.split("@")[1].rsplit(":", 1)[0]),
             'server_port': int(re.search(r'\d+', server_info.netloc.rsplit(":", 1)[1].split(",")[0]).group()),

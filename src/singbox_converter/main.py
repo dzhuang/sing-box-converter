@@ -1,10 +1,5 @@
 import json, requests, sys, argparse
-from . import tool
 from .dispatch import NodeExtractor, list_local_templates
-
-
-def load_json(path):
-    return json.loads(tool.readFile(path))
 
 
 def update_local_config(local_host, path):
@@ -63,7 +58,9 @@ def main():
         providers = json.loads(temp_json_data)
 
     else:
-        providers = load_json('providers.json')  # 加载本地 providers.json
+        with open('providers.json', "rb") as f:
+            providers = json.loads(f.read())
+
     if providers.get('config_template'):
         config_template_path = providers['config_template'].strip()
         print('选择: \033[33m' + config_template_path + '\033[0m')

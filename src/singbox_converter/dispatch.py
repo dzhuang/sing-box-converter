@@ -8,8 +8,7 @@ from urllib.parse import urlparse
 import requests
 
 from .tool import (
-    get_protocol, noblankLine, readFile, b64Decode, rename, proDuplicateNodeName,
-    saveFile
+    get_protocol, b64_decode, rename_country, proDuplicateNodeName,
 )
 from .parsers import (
     HttpParser, HttpsParser, HysteriaParser, Hysteria2Parser,
@@ -194,14 +193,12 @@ class NodeExtractor:
             for proxy in yaml_data['proxies']:
                 share_links.append(clash2v2ray(proxy))
 
-            node = '\n'.join(share_links)
-            processed_list = noblankLine(node)
-            return processed_list
+            return '\n'.join([l.strip() for l in share_links if l.strip()])
         else:
-            data = readFile(file_path)
-            data = bytes.decode(data, encoding='utf-8')
-            data = noblankLine(data)
-            return data
+            with open(file_path, "r") as f:
+                data = f.read()
+
+            return "\n".join([l.strip() for l in data.splitlines() if l.strip()])
 
     def get_content_from_sub(self, subscribe, max_retries=6):
         url = subscribe["url"]
@@ -214,7 +211,8 @@ class NodeExtractor:
             "hy2://", "wg://", "http2://", "socks://", "socks5://"]
 
         if any(url.startswith(prefix) for prefix in url_schemes):
-            return noblankLine(url)
+            return "\n".join(
+                [l.strip() for l in url.splitlines() if l.strip()])
 
         user_agent = subscribe.get('User-Agent', self.fetch_sub_ua)
 
@@ -231,8 +229,8 @@ class NodeExtractor:
                 response_text = response.text
 
                 if any(response_text.startswith(prefix) for prefix in url_schemes):
-                    response_text = noblankLine(response_text)
-                    return response_text
+                    return "\n".join(
+                        [l.strip() for l in response_text.splitlines() if l.strip()])
 
                 elif 'proxies' in response_text:
                     import ruamel.yaml as yaml
@@ -252,7 +250,7 @@ class NodeExtractor:
                         pass
                 else:
                     try:
-                        response_text = b64Decode(response_text)
+                        response_text = b64_decode(response_text)
                         response_text = response_text.decode(encoding="utf-8")
                     except:
                         pass
@@ -282,12 +280,12 @@ class NodeExtractor:
         url_or_path = subscribe["url"]
 
         if url_or_path.startswith('sub://'):
-            url_or_path = b64Decode(url_or_path[6:]).decode('utf-8')
+            url_or_path = b64_decode(url_or_path[6:]).decode('utf-8')
 
         url_str = urlparse(url_or_path)
         if not url_str.scheme:
             try:
-                _content = b64Decode(url_or_path).decode('utf-8')
+                _content = b64_decode(url_or_path).decode('utf-8')
                 data = self.parse_content(_content)
                 processed_list = []
                 for item in data:
@@ -344,7 +342,7 @@ class NodeExtractor:
         def add_emoji(nodes, _subscribe):
             if _subscribe.get('emoji'):
                 for node in nodes:
-                    node['tag'] = rename(node['tag'])
+                    node['tag'] = rename_country(node['tag'])
 
         _nodes = {}
 
@@ -575,7 +573,10 @@ class NodeExtractor:
             else:
                 self.console_print(f"文件不存在，正在保存：\033[33m{path}\033[0m")
                 # print(f"File không tồn tại, đang lưu tại: \033[33m{path}\033[0m")
-            saveFile(path, json.dumps(nodes, indent=2, ensure_ascii=False))
+
+            with open(path, mode='w', encoding='utf-8') as f:
+                f.write(json.dumps(nodes, indent=2, ensure_ascii=False))
+
         except Exception as e:
             self.console_print(f"保存配置文件时出错：{str(e)}")
             # print(f"Lỗi khi lưu file cấu hình: {str(e)}")
@@ -589,8 +590,10 @@ class NodeExtractor:
                 else:
                     self.console_print(
                         f"文件不存在，正在保存：\033[33m{config_file_path}\033[0m")
-                saveFile(config_file_path,
-                              json.dumps(nodes, indent=2, ensure_ascii=False))
+
+                with open(config_file_path, mode='w', encoding='utf-8') as f:
+                    f.write(json.dumps(nodes, indent=2, ensure_ascii=False))
+
                 # print(f"配置文件已保存到 {config_file_path}")
             except Exception as e:
                 os.remove(config_file_path)

@@ -21,14 +21,14 @@ class HttpParser(ParserBase):
             for k, v in parse_qs(server_info.netloc).items()
         )
         remark = server_info.fragment
-        netloc = (tool.b64Decode(server_info.netloc.split('&')[0])).decode()
+        netloc = (tool.b64_decode(server_info.netloc.split('&')[0])).decode()
         if '@' in netloc:
             _netloc = netloc.rsplit("@", 1)
             server_port = _netloc[1]
         else:
            server_port = netloc
         node = {
-            'tag': remark or tool.genName() + '_http',
+            'tag': remark or tool.generate_random_name() + '_http',
             'type': 'http',
             'server': re.sub(r"\[|\]", "", server_port.rsplit(":", 1)[0]),
             'server_port': int(server_port.rsplit(":", 1)[1]),

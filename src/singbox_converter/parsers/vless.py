@@ -9,7 +9,7 @@ class VlessParser(ParserBase):
         info = data[:]
         server_info = urlparse(info)
         try:
-            netloc = tool.b64Decode(server_info.netloc).decode('utf-8')
+            netloc = tool.b64_decode(server_info.netloc).decode('utf-8')
         except:
             netloc = server_info.netloc
         _netloc = netloc.split("@")
@@ -18,7 +18,7 @@ class VlessParser(ParserBase):
             for k, v in parse_qs(server_info.query).items()
         )
         node = {
-            'tag': unquote(server_info.fragment) or tool.genName() + '_vless',
+            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_vless',
             'type': 'vless',
             'server': re.sub(r"\[|\]", "", _netloc[1].rsplit(":", 1)[0]),
             'server_port': int(_netloc[1].rsplit(":", 1)[1]),

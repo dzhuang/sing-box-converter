@@ -14,7 +14,7 @@ class WireGuardParser(ParserBase):
             for k, v in parse_qs(server_info.query).items()
         )
         node = {
-            'tag': unquote(server_info.fragment) or tool.genName() + '_wireguard',
+            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_wireguard',
             'type': 'wireguard',
             'server': re.sub(r"\[|\]", "", server_info.netloc.rsplit(":", 1)[0]),
             'server_port': int(server_info.netloc.rsplit(":", 1)[1]),

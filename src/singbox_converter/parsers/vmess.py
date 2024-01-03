@@ -16,9 +16,9 @@ class VmessParser(ParserBase):
                     (k, v if len(v) > 1 else v[0])
                     for k, v in parse_qs(server_info.query).items()
                 )
-                _path = tool.b64Decode(server_info.path).decode('utf-8').split("@")
+                _path = tool.b64_decode(server_info.path).decode('utf-8').split("@")
                 node = {
-                    'tag': netquery.get('remarks', tool.genName() + '_vmess'),
+                    'tag': netquery.get('remarks', tool.generate_random_name() + '_vmess'),
                     'type': 'vmess',
                     'server': _path[1].split(":")[0],
                     'server_port': int(_path[1].split(":")[1]),
@@ -49,7 +49,7 @@ class VmessParser(ParserBase):
                     }
                 return node
             else:
-                proxy_str = tool.b64Decode(info).decode('utf-8')
+                proxy_str = tool.b64_decode(info).decode('utf-8')
         except:
             print(info)
             return None
@@ -57,7 +57,7 @@ class VmessParser(ParserBase):
             item = json.loads(proxy_str)
         except:
             return None
-        content = item.get('ps').strip() if item.get('ps') else tool.genName() + '_vmess'
+        content = item.get('ps').strip() if item.get('ps') else tool.generate_random_name() + '_vmess'
         node = {
             'tag': content,
             'type': 'vmess',
