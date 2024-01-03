@@ -29,11 +29,10 @@ def display_template(tl):
     print(print_str)
 
 
-def select_config_template(tl, selected_template_index=None):
+def select_config_template(args, tl):
     if args.template_index is not None:
         _uip = args.template_index
     else:
-        # print ('Nhập số để chọn mẫu cấu hình tương ứng (nhấn Enter để chọn mẫu cấu hình đầu tiên theo mặc định): ')
         _uip = input('输入序号，载入对应config模板（直接回车默认选第一个配置模板）：')
         try:
             if _uip == '':
@@ -41,14 +40,12 @@ def select_config_template(tl, selected_template_index=None):
             _uip = int(_uip)
             if _uip < 1 or _uip > len(tl):
                 print('输入了错误信息！重新输入')
-                # print('Nhập thông tin không chính xác! Vui lòng nhập lại')
-                return select_config_template(tl)
+                return select_config_template(args, tl)
             else:
                 _uip -= 1
         except:
             print('输入了错误信息！重新输入')
-            # print('Nhập thông tin không chính xác! Vui lòng nhập lại')
-            return select_config_template(tl)
+            return select_config_template(args, tl)
     return _uip
 
 
@@ -66,7 +63,6 @@ def main():
     parser.add_argument('--template_index', type=int, help='模板序号')
     args = parser.parse_args()
     temp_json_data = args.temp_json_data
-    config = None
 
     if temp_json_data and temp_json_data != '{}':
         providers = json.loads(temp_json_data)
@@ -84,8 +80,7 @@ def main():
             # print('Không tìm thấy file mẫu')
             sys.exit()
         display_template(template_list)
-        uip = select_config_template(
-            template_list, selected_template_index=args.template_index)
+        uip = select_config_template(args, template_list)
         print('选择: \033[33m' + template_list[uip] + '.json\033[0m')
 
         providers["config_template"] = uip
