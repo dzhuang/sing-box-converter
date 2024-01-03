@@ -6,8 +6,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-import ruamel.yaml
-import yaml
+import ruamel.yaml as yaml
 
 from .tool import (
     get_protocol, noblankLine, readFile, b64Decode, rename, proDuplicateNodeName,
@@ -184,7 +183,7 @@ class NodeExtractor:
     def get_content_from_file(self, file_path):
         self.console_print('处理: \033[31m' + file_path + '\033[0m')
         file_extension = os.path.splitext(file_path)[1]
-        if file_extension.lower() == '.yaml':
+        if file_extension.lower() in ['.yaml', '.yml']:
             with open(file_path, 'rb') as file:
                 content = file.read()
 
@@ -236,7 +235,7 @@ class NodeExtractor:
 
                 elif 'proxies' in response_text:
                     yaml_content = response.content.decode('utf-8')
-                    yaml_obj = ruamel.yaml.YAML()
+                    yaml_obj = yaml.YAML()
                     try:
                         response_text = dict(yaml_obj.load(yaml_content))
                         return response_text

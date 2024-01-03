@@ -12,7 +12,6 @@ def read(fname):
 
 install_requires = [
     'requests',
-    'PyYAML',
     'ruamel.yaml',
 ]
 
