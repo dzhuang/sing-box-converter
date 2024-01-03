@@ -16,17 +16,12 @@ def update_local_config(local_host, path):
     print(r.text)
 
 
-def display_template(tl):
-    def loop_color(text):
-        color_code = [31, 32, 33, 34, 35, 36, 91, 92, 93, 94, 95, 96]
-        text = '\033[1;{color}m{text}\033[0m'.format(color=color_code[0], text=text)
-        color_code.append(color_code.pop(0))
-        return text
+def display_template(template_list):
+    color_code = [31, 32, 33, 34, 35, 36, 91, 92, 93, 94, 95, 96]
 
-    print_str = ''
-    for i in range(len(tl)):
-        print_str += loop_color('{index}、{name} '.format(index=i + 1, name=tl[i]))
-    print(print_str)
+    for idx, tmpl in enumerate(template_list):
+        print_str = f"\033[{color_code[idx]}m {idx + 1}: {tmpl} \033[0m"
+        print(print_str)
 
 
 def select_config_template(args, tl):
