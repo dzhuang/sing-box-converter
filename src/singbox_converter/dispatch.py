@@ -2,6 +2,8 @@ import json
 import os
 import re
 import sys
+import warnings
+from copy import deepcopy
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -65,7 +67,9 @@ class NodeExtractor:
                  is_console_mode=False, fetch_sub_ua=DEFAULT_UA,
                  fetch_sub_fallback_ua=DEFAULT_FALLBACK_UA,
                  export_config_folder="",
-                 export_config_name="config.json"):
+                 export_config_name="config.json",
+                 auto_fix_empty_outbound=True,
+                 ):
 
         if template is not None:
             providers_config["config_template"] = template
@@ -81,6 +85,8 @@ class NodeExtractor:
             "save_config_path",
             os.path.join(export_config_folder, export_config_name)
         )
+        self.auto_fix_empty_outbound = auto_fix_empty_outbound
+        self.empty_outbound_node_tags = []
 
     @property
     def session(self):
@@ -525,6 +531,14 @@ class NodeExtractor:
                         else:
                             t_o.append(oo)
                     if len(t_o) == 0:
+                        if self.auto_fix_empty_outbound:
+                            po['outbounds'] = t_o
+                            if po.get('filter'):
+                                del po['filter']
+
+                            self.empty_outbound_node_tags.append(po['tag'])
+                            continue
+
                         self.console_print(
                             '发现 {} 出站下的节点数量为 0 ，会导致sing-box无法运行，'
                             '请检查config模板是否正确。'.format(po['tag']))
@@ -552,7 +566,42 @@ class NodeExtractor:
                 and asod['proxy'] in dns_tags
                 and asod['direct'] in dns_tags):
             self.set_proxy_rule_dns()
+
+        self.remove_empty_bound_nodes()
+
         return self.template_config
+
+    def remove_empty_bound_nodes(self):
+        if not self.auto_fix_empty_outbound:
+            return
+
+        # todo: raise error when the node is set in dns servers and download_detour
+        #       dns_config = nodes.get("dns", {})
+
+        root_outbounds = deepcopy(self.template_config.get("outbounds", []))
+
+        while len(self.empty_outbound_node_tags):
+            _tag = self.empty_outbound_node_tags.pop(0)
+            new_root_outbounds = []
+            for ob in root_outbounds:
+                if ob["tag"] == _tag:
+                    warnings.warn(
+                        f"'{_tag}' was removed from outbounds because it does not "
+                        f"contain any child outbound nodes.")
+                    continue
+                this_outbounds = ob.get("outbounds", None)
+                if this_outbounds is not None:
+                    this_outbounds = [tag for tag in this_outbounds
+                                      if tag != _tag]
+                    ob["outbounds"] = this_outbounds
+                    if len(ob["outbounds"]) == 0:
+                        self.empty_outbound_node_tags.append(ob["tag"])
+
+                new_root_outbounds.append(ob)
+
+            root_outbounds = new_root_outbounds
+
+        self.template_config["outbounds"] = root_outbounds
 
     def write_config(self, nodes, path=None):
         path = path or self.config_path
