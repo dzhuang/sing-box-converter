@@ -20,6 +20,9 @@ from .parsers.base import ParserBase
 from .parsers.clash2base64 import clash2v2ray
 from .constants import DEFAULT_UA, DEFAULT_FALLBACK_UA, BUILTIN_TEMPLATE_PATH
 
+
+CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
 protocol_klass_map = {
     "http": HttpParser,
     "https": HttpsParser,
@@ -53,12 +56,12 @@ class FailedToFetchSubscription(Exception):
 
 
 def list_local_templates():
-    template_dir = BUILTIN_TEMPLATE_PATH  # 配置模板文件夹路径
-    template_files = os.listdir(template_dir)  # 获取文件夹中的所有文件
+    template_dir = os.path.join(CURRENT_DIRECTORY, BUILTIN_TEMPLATE_PATH)
+    template_files = os.listdir(template_dir)
     _template_list = [
         os.path.splitext(file)[0] for file in template_files
-        if file.endswith('.json')]  # 移除扩展名并过滤出以.json结尾的文件
-    _template_list.sort()  # 对文件名进行排序
+        if file.endswith('.json')]
+    _template_list.sort()
     return _template_list
 
 
@@ -103,12 +106,9 @@ class NodeExtractor:
             template_index = int(template)
             _template_list = list_local_templates()
 
-            current_file_path = os.path.abspath(__file__)
-            current_directory = os.path.dirname(current_file_path)
-
             file_path = (
                 os.path.join(
-                    current_directory,
+                    CURRENT_DIRECTORY,
                     BUILTIN_TEMPLATE_PATH,
                     f"{_template_list[template_index]}.json"))
 
