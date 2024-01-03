@@ -40,7 +40,8 @@ extractor = NodeExtractor(
     fetch_sub_ua="clash.meta",
     # fetch_sub_fallback_ua="clash",
     # export_config_folder="",
-    # export_config_name="my_config.json"
+    # export_config_name="my_config.json",
+    # auto_fix_empty_outbound=True,
 )
 
 extractor.export_config(
