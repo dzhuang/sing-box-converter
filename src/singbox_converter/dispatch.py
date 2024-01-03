@@ -52,6 +52,10 @@ class InvalidTemplate(Exception):
     pass
 
 
+class UnknownRuleSet(Exception):
+    pass
+
+
 class FailedToFetchSubscription(Exception):
     pass
 
@@ -599,6 +603,8 @@ class NodeExtractor:
 
         self.remove_empty_bound_nodes()
 
+        self.validate_rule_set()
+
         return self.template_config
 
     def remove_empty_bound_nodes(self):
@@ -642,6 +648,46 @@ class NodeExtractor:
             root_outbounds = new_root_outbounds
 
         self.template_config["outbounds"] = root_outbounds
+
+    def validate_rule_set(self):
+        route = self.template_config.get("route", {})
+        rules = route.get("rules", [])
+
+        used_rule_set = set()
+        for rule in rules:
+            rule_set = rule.get("rule_set", None)
+            if not rule_set:
+                continue
+
+            if not isinstance(rule_set, list):
+                rule_set = [rule_set]
+
+            used_rule_set.update(rule_set)
+
+        rule_set_config = route.get("rule_set", [])
+
+        configured_rule_set_tags = [rs["tag"] for rs in rule_set_config]
+
+        unknown_rule_sets = list(used_rule_set.difference(
+            set(configured_rule_set_tags)))
+
+        if unknown_rule_sets:
+            unknowns = ", ".join(unknown_rule_sets)
+            raise UnknownRuleSet(f"Unknown rule_set: {unknowns}")
+
+        unused_rule_sets = list(
+            set(configured_rule_set_tags).difference(used_rule_set))
+
+        if unused_rule_sets:
+            new_rule_set = [rs for rs in rule_set_config
+                            if rs["tag"] not in unused_rule_sets]
+
+            self.template_config["route"]["rule_set"] = new_rule_set
+
+            unused_rule_set_str = ", ".join(unused_rule_sets)
+            self.logger.warning(
+                f"The following rule_set were not referenced and were "
+                f"removed from the generated config: {unused_rule_set_str}")
 
     def write_config(self, nodes, path=None):
         path = path or self.config_path
