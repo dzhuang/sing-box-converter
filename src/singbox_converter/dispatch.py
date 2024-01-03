@@ -591,11 +591,21 @@ class NodeExtractor:
                     continue
                 this_outbounds = ob.get("outbounds", None)
                 if this_outbounds is not None:
+                    if not isinstance(this_outbounds, list):
+                        this_outbounds = [this_outbounds]
+
                     this_outbounds = [tag for tag in this_outbounds
                                       if tag != _tag]
                     ob["outbounds"] = this_outbounds
                     if len(ob["outbounds"]) == 0:
                         self.empty_outbound_node_tags.append(ob["tag"])
+
+                if ob.get("default") == _tag:
+                    ob.pop("default")
+                    warnings.warn(
+                        f"outbound '{ob['tag']}' remove the default outbound node "
+                        f"'{_tag}' which does not "
+                        f"contain any child outbound nodes.")
 
                 new_root_outbounds.append(ob)
 
