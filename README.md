@@ -5,7 +5,7 @@ The code are refactored from [Toperlock/sing-box-subscribe](https://github.com/T
 ## How to install
 
 ```bash
-pip install git+https://github.com/dzhuang/sing-box-subscribe.git@package
+pip install PySingBoxConverter
 ```
 
 ## Use in commandline
