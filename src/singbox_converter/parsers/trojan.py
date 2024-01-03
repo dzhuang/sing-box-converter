@@ -1,6 +1,7 @@
 import re
+from urllib.parse import parse_qs, unquote, urlparse
+
 from .. import tool
-from urllib.parse import urlparse, parse_qs, unquote
 from .base import ParserBase
 
 

@@ -1,7 +1,9 @@
-import json,re,urllib
-from .. import tool
+import json
+import re
+import urllib
 from urllib.parse import parse_qs
 
+from .. import tool
 from .base import ParserBase
 
 

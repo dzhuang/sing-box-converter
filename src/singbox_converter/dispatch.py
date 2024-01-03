@@ -7,17 +7,14 @@ from urllib.parse import urlparse
 
 import requests
 
-from .tool import (
-    get_protocol, b64_decode, rename_country, proDuplicateNodeName,
-)
-from .parsers import (
-    HttpParser, HttpsParser, HysteriaParser, Hysteria2Parser,
-    SocksParser, SSParser, SSRParser, TrojanParser, TUICParser, VlessParser,
-    VmessParser, WireGuardParser)
+from .constants import BUILTIN_TEMPLATE_PATH, DEFAULT_FALLBACK_UA, DEFAULT_UA
+from .parsers import (HttpParser, HttpsParser, Hysteria2Parser, HysteriaParser,
+                      SocksParser, SSParser, SSRParser, TrojanParser,
+                      TUICParser, VlessParser, VmessParser, WireGuardParser)
 from .parsers.base import ParserBase
 from .parsers.clash2base64 import clash2v2ray
-from .constants import DEFAULT_UA, DEFAULT_FALLBACK_UA, BUILTIN_TEMPLATE_PATH
-
+from .tool import (b64_decode, get_protocol, proDuplicateNodeName,
+                   rename_country)
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 

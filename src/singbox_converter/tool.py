@@ -1,7 +1,7 @@
 import base64
 import random
-import string
 import re
+import string
 
 regex_patterns = {  # noqa
     '🇭🇰': re.compile(r'香港|沪港|呼港|中港|HKT|HKBN|HGC|WTT|CMI|穗港|广港|京港|🇭🇰|HK|Hongkong|Hong Kong|HongKong|HONG KONG'),

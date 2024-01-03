@@ -1,4 +1,9 @@
-import json, requests, sys, argparse
+import argparse
+import json
+import sys
+
+import requests
+
 from .dispatch import NodeExtractor, list_local_templates
 
 
