@@ -1,8 +1,8 @@
 import json
+import logging
 import os
 import re
 import sys
-import warnings
 from copy import deepcopy
 from datetime import datetime
 from urllib.parse import urlparse
@@ -17,6 +17,10 @@ from .parsers.base import ParserBase
 from .parsers.clash2base64 import clash2v2ray
 from .tool import (b64_decode, get_protocol, proDuplicateNodeName,
                    rename_country)
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
@@ -69,6 +73,8 @@ class NodeExtractor:
                  export_config_folder="",
                  export_config_name="config.json",
                  auto_fix_empty_outbound=True,
+                 log_level=logging.INFO,
+                 disable_log=False,
                  ):
 
         if template is not None:
@@ -87,6 +93,19 @@ class NodeExtractor:
         )
         self.auto_fix_empty_outbound = auto_fix_empty_outbound
         self.empty_outbound_node_tags = []
+
+        self.logger = logging.getLogger(__name__)
+        self.config_log(log_level, disable_log)
+
+    def config_log(self, level, disable_log):
+        if disable_log:
+            self.logger.setLevel(logging.NOTSET)
+            self.logger.addHandler(logging.NullHandler())
+            self.logger.propagate = False
+        else:
+            if not self.logger.hasHandlers():
+                self.logger.addHandler(logging.StreamHandler())
+            self.logger.setLevel(level)
 
     @property
     def session(self):
@@ -183,6 +202,8 @@ class NodeExtractor:
 
     def get_content_from_file(self, file_path):
         self.console_print('处理: \033[31m' + file_path + '\033[0m')
+        self.logger.info(f"Getting content from {file_path}")
+
         file_extension = os.path.splitext(file_path)[1]
         if file_extension.lower() in ['.yaml', '.yml']:
             with open(file_path, 'rb') as file:
@@ -207,6 +228,7 @@ class NodeExtractor:
         url = subscribe["url"]
 
         self.console_print('处理: \033[31m' + url + '\033[0m')
+        self.logger.info(f"Getting content from {url}")
 
         url_schemes = [
             "vmess://", "vless://", "ss://", "ssr://", "trojan://",
@@ -363,7 +385,10 @@ class NodeExtractor:
                 _nodes[subscribe['tag']] += __nodes
             else:
                 self.console_print('没有在此订阅下找到节点，跳过')
-                # print('Không tìm thấy proxy trong link thuê bao này, bỏ qua')
+
+                self.logger.warning(
+                    f"No nodes found in {subscribe['tag']}, skipped.")
+
         proDuplicateNodeName(_nodes)
         return _nodes
 
@@ -543,6 +568,11 @@ class NodeExtractor:
                             '发现 {} 出站下的节点数量为 0 ，会导致sing-box无法运行，'
                             '请检查config模板是否正确。'.format(po['tag']))
 
+                        self.logger.warning(
+                            f"{po['tag']} has no outbound nodes, that will cause "
+                            f"failure, please check if the config template is "
+                            f"correct or try to set auto_fix_empty_outbound=True.")
+
                         CONFIG_FILE_NAME = self.config_path
                         config_file_path = os.path.join('/tmp', CONFIG_FILE_NAME)
                         if os.path.exists(config_file_path):
@@ -585,7 +615,7 @@ class NodeExtractor:
             new_root_outbounds = []
             for ob in root_outbounds:
                 if ob["tag"] == _tag:
-                    warnings.warn(
+                    self.logger.warning(
                         f"'{_tag}' was removed from outbounds because it does not "
                         f"contain any child outbound nodes.")
                     continue
@@ -602,7 +632,7 @@ class NodeExtractor:
 
                 if ob.get("default") == _tag:
                     ob.pop("default")
-                    warnings.warn(
+                    self.logger.warning(
                         f"outbound '{ob['tag']}' remove the default outbound node "
                         f"'{_tag}' which does not "
                         f"contain any child outbound nodes.")
@@ -625,10 +655,14 @@ class NodeExtractor:
             if os.path.exists(path):
                 os.remove(path)
                 self.console_print(f"已删除文件，并重新保存：\033[33m{path}\033[0m")
+
                 # print(f"File cấu hình đã được lưu vào: \033[33m{path}\033[0m")
             else:
                 self.console_print(f"文件不存在，正在保存：\033[33m{path}\033[0m")
                 # print(f"File không tồn tại, đang lưu tại: \033[33m{path}\033[0m")
+
+            self.logger.info(
+                f"Config generated to {path}.")
 
             with open(path, mode='w', encoding='utf-8') as f:
                 f.write(json.dumps(nodes, indent=2, ensure_ascii=False))
