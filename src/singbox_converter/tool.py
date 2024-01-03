@@ -1,14 +1,17 @@
-import urllib.parse, base64, requests, random, string, re
+import base64, random, string, re
+
 
 def get_encoding(file):
     import chardet
     with open(file,'rb') as f:
         return chardet.detect(f.read())['encoding']
 
+
 def saveFile(path,content):
     file = open(path, mode='w',encoding='utf-8')
     file.write(content)
     file.close()
+
 
 regex_patterns = {
     '🇭🇰': re.compile(r'香港|沪港|呼港|中港|HKT|HKBN|HGC|WTT|CMI|穗港|广港|京港|🇭🇰|HK|Hongkong|Hong Kong|HongKong|HONG KONG'),
@@ -154,6 +157,8 @@ regex_patterns = {
     '🇦🇶': re.compile(r'南极|南極|(\s|-)?AQ\d*|Antarctica'),
     '🇨🇳': re.compile(r'中国|中國|江苏|北京|上海|广州|深圳|杭州|徐州|青岛|宁波|镇江|沈阳|济南|回国|back|(\s|-)?CN(?!2GIA)\d*|China'),
 }
+
+
 def rename(input_str):
     for country_code, pattern in regex_patterns.items():
         if input_str.startswith(country_code):
@@ -285,60 +290,3 @@ def prefixStr(nodelist,prestr):
     for node in nodelist:
         node['name'] = prestr+node['name'].strip()
     return nodelist
-
-def getResponse(url, custom_user_agent=None):
-    response = None
-    headers = {
-        'User-Agent': custom_user_agent if custom_user_agent else 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15'
-        #'User-Agent': 'clash.meta'
-    }
-    try:
-        response = requests.get(url,headers=headers,timeout=5000)
-        if response.status_code==200:
-            return response
-        else:
-            return None
-    except:
-        return None
-    
-class ConfigSSH:
-    server = {'ip':None,'port':22,'user':None,'password':''}
-    def __init__(self,server:dict) -> None:
-        for k in self.server:
-            if k != 'port' and not k in server.keys():
-                return None
-            if k in server.keys():
-                self.server[k] = server[k]
-    def connect(self):
-        try:
-            from paramiko import SSHClient
-            ssh = SSHClient()
-            ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(hostname=self.server['ip'],port=22, username=self.server['user'], password=self.server['password'])
-            self.ssh = ssh
-        except ImportError:
-            pass
-
-    def execCMD(self,command:str):
-        stdin, stdout, stderr = self.ssh.exec_command(command) 
-        print(stdout.read().decode('utf-8')) 
-
-    def uploadFile(self,source:str,target:str):
-        try:
-            from scp import SCPClient
-            scp = SCPClient(self.ssh.get_transport())
-            scp.put(source, recursive=True, remote_path=target)
-        except ImportError:
-            pass
-
-    def getFile(self,remote:str,local:str):
-        try:
-            from scp import SCPClient
-            scp = SCPClient(self.ssh.get_transport())
-            scp.get(remote, local)
-        except ImportError:
-            pass
-
-    def close(self):
-        self.ssh.close()
