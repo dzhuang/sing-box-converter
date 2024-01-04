@@ -21,21 +21,16 @@ vi providers.json
 #### Then run
 
 ```bash
-singbox_convert
+singbox_convert -t 1 -o config1.json
 ```
 
 ## Use in python code systematically
 
 ```python
-
-import json
 from singbox_converter import SingBoxConverter
 
-with open("/path/to/providers.json", "rb") as f:
-    config = json.loads(f.read())
-
 converter = SingBoxConverter(
-    providers_config=config,
+    providers_config="/path/to/providers.json",
     template="/path/to/template",
     fetch_sub_ua="clash.meta",
     # fetch_sub_fallback_ua="clash",

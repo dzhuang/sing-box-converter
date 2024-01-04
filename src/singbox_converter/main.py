@@ -1,19 +1,8 @@
 import argparse
-import json
+import os
 import sys
 
-import requests
-
-from .dispatch import SingBoxConverter, NoTemplateConfigured, list_local_templates
-
-
-def update_local_config(local_host, path):
-    header = {
-        'Content-Type': 'application/json'
-    }
-    r = requests.put(
-        local_host + '/configs?force=false', json={"path": path}, headers=header)
-    print(r.text)
+from .dispatch import SingBoxConverter, list_local_templates
 
 
 def display_template(template_list):
@@ -24,68 +13,80 @@ def display_template(template_list):
         print(print_str)
 
 
-def select_config_template(args, tl):
-    if args.template_index is not None:
-        _uip = args.template_index
-    else:
-        _uip = input('输入序号，载入对应config模板（直接回车默认选第一个配置模板）：')
-        try:
-            if _uip == '':
-                return 0
-            _uip = int(_uip)
-            if _uip < 1 or _uip > len(tl):
-                print('输入了错误信息！重新输入')
-                return select_config_template(args, tl)
-            else:
-                _uip -= 1
-        except:
-            print('输入了错误信息！重新输入')
-            return select_config_template(args, tl)
-    return _uip
-
-
-# 自定义函数，用于解析参数为 JSON 格式
-def parse_json(value):
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        raise argparse.ArgumentTypeError(f"Invalid JSON: {value}")
-
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--temp_json_data', type=parse_json, help='临时内容')
-    parser.add_argument('--template_index', type=int, help='模板序号')
+    parser.add_argument(
+        "-t", '--template', help='template path or url or index')
+    parser.add_argument(
+        "-o", '--output_path', required=True,
+        help='export path of generated config')
+    parser.add_argument(
+        "-f", '--providers_json_path', required=False,
+        default="providers.json",
+        help='path to providers config json file')
+    parser.add_argument(
+        "-n", '--nodes_only', required=False, default=False,
+        help='only export nodes')
+    parser.add_argument(
+        "--force_overwrite", required=False, default=False,
+        help='if the output_path exist, whether overwrite that file')
+
     args = parser.parse_args()
-    temp_json_data = args.temp_json_data
 
-    if temp_json_data and temp_json_data != '{}':
-        providers = json.loads(temp_json_data)
+    template = args.template
 
-    else:
-        with open('providers.json', "rb") as f:
-            providers = json.loads(f.read())
-
-    try:
-        converter = SingBoxConverter(
-            providers_config=providers, is_console_mode=True)
-    except NoTemplateConfigured:
-        print(f"Note: 'config_template' not configured, please select one")
+    if template is None:
+        print("Note: 'template' not configured, please select one")
         template_list = list_local_templates()
         if len(template_list) < 1:
             print('没有找到模板文件')
             sys.exit()
         display_template(template_list)
-        uip = select_config_template(args, template_list)
-        print('选择: \033[33m' + template_list[uip] + '.json\033[0m')
+        while True:
+            try:
+                template = input(
+                    '输入序号，载入对应config模板（直接回车默认选第一个配置模板）：')
 
-        providers["config_template"] = uip
+                if template == '':
+                    template = 0
 
-        converter = SingBoxConverter(
-            providers_config=providers, is_console_mode=True)
+                else:
+                    template = int(template)
 
-    # update_local_config('http://127.0.0.1:9090',providers['save_config_path'])
-    converter.export_config()
+                if template > len(template_list):
+                    raise ValueError()
+
+                print('选择: \033[33m' + template_list[template] + '.json\033[0m')
+                break
+            except Exception:  # noqa
+                print('输入了错误信息！重新输入')
+
+    output_path = args.output_path
+
+    directory = os.path.dirname(output_path)
+    if directory.strip():
+        if not os.path.exists(directory):
+            raise FileNotFoundError(
+                f"The directory '{directory}' does not exist.")
+
+    converter = SingBoxConverter(
+        providers_config=args.providers_json_path,
+        template=template,
+        is_console_mode=True)
+
+    if os.path.exists(output_path):
+        if not args.force_overwrite:
+            raise FileExistsError(f"A file already exists: '{output_path}'.")
+        else:
+            try:
+                os.remove(output_path)
+            except Exception as e:
+                print(
+                    f"Failed to remove {output_path}: {type(e).__name__}: {str(e)}")
+                exit(1)
+
+    converter.export_config(output_path, nodes_only=args.nodes_only)
+    print(f"Done generating {output_path}.")
 
 
 if __name__ == '__main__':
