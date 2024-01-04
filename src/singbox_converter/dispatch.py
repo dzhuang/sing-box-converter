@@ -70,7 +70,7 @@ def list_local_templates():
     return _template_list
 
 
-class NodeExtractor:
+class SingBoxConverter:
     def __init__(self, providers_config: dict | None = None, template=None,
                  is_console_mode=False, fetch_sub_ua=DEFAULT_UA,
                  fetch_sub_fallback_ua=DEFAULT_FALLBACK_UA,
@@ -81,26 +81,28 @@ class NodeExtractor:
                  disable_log=False,
                  ):
         """
-        :param providers_config: dict, see https://raw.githubusercontent.com/dzhuang/sing-box-subscribe/main/providers-example.json for example.
-        :param template: an int which denote the index (alphabetical ordered)
-               of built-in templates, or an url of the template, or a path for the
-               template file. 
-               See https://github.com/dzhuang/sing-box-subscribe/tree/package/src/singbox_converter/config_template
-               for available built-in templates. This value will override
-               that configured in ``providers_config``.
-        :param is_console_mode: bool. Whether the instance is running under
-               console mode.
-        :param fetch_sub_ua: string. The user-agent used when fetching 
-               subscriptions. Will be override by ``User-Agent`` value of target 
-               subscribe item in ``providers_config``.
-        :param fetch_sub_fallback_ua: string. The fallback user-agent which will 
-               be used when previous requests failed with 403 (permission denied).
-        :param export_config_folder: string. Defaults to "".
-        :param export_config_name: string. Defaults to "config.json".
-        :param auto_fix_empty_outbound: Auto matically remove outbounds with 
-               no outbound nodes. Defaults to `True`. 
-        :param log_level: Defaults to `logging.INFO` 
-        :param disable_log: bool. Defaults to `False`
+        :param dict | None providers_config: Configuration for providers. 
+            See example at `providers example <https://raw.githubusercontent.com/dzhuang/sing-box-subscribe/main/providers-example.json>`_.
+        :param template: An integer representing the index of built-in templates 
+          (in alphabetical order), a URL of the template, or a file path to the 
+          template. See available templates at `built-in templates <https://github.com/dzhuang/sing-box-subscribe/tree/package/src/singbox_converter/config_template>`_.
+          Overrides configuration in `providers_config`.
+        :type template: int, str, or None
+        :param bool is_console_mode: Specifies if the instance is running in console mode.
+        :param str fetch_sub_ua: The User-Agent string used when fetching 
+          subscriptions. Can be overridden by `User-Agent` value in `providers_config`.
+        :param str fetch_sub_fallback_ua: The fallback User-Agent used when 
+          requests fail with a 403 error.
+        :param str export_config_folder: The folder for exporting configuration. 
+          Defaults to an empty string.
+        :param str export_config_name: The name of the exported configuration file. 
+          Defaults to "config.json".
+        :param bool auto_fix_empty_outbound: Whether to automatically remove 
+          outbounds with no nodes. Defaults to `True`.
+        :param log_level: The logging level. Defaults to `logging.INFO`.
+        :type log_level: logging.Level
+        :param bool disable_log: If set to True, disables logging. 
+          Defaults to `False`.
         """  # noqa
 
         if template is not None:

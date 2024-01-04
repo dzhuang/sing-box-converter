@@ -4,7 +4,7 @@ import sys
 
 import requests
 
-from .dispatch import NodeExtractor, NoTemplateConfigured, list_local_templates
+from .dispatch import SingBoxConverter, NoTemplateConfigured, list_local_templates
 
 
 def update_local_config(local_host, path):
@@ -67,7 +67,7 @@ def main():
             providers = json.loads(f.read())
 
     try:
-        extractor = NodeExtractor(
+        converter = SingBoxConverter(
             providers_config=providers, is_console_mode=True)
     except NoTemplateConfigured:
         print(f"Note: 'config_template' not configured, please select one")
@@ -81,10 +81,11 @@ def main():
 
         providers["config_template"] = uip
 
-        extractor = NodeExtractor(providers_config=providers, is_console_mode=True)
+        converter = SingBoxConverter(
+            providers_config=providers, is_console_mode=True)
 
     # update_local_config('http://127.0.0.1:9090',providers['save_config_path'])
-    extractor.export_config()
+    converter.export_config()
 
 
 if __name__ == '__main__':

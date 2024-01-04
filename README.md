@@ -29,12 +29,12 @@ singbox_converter
 ```python
 
 import json
-from singbox_converter import NodeExtractor
+from singbox_converter import SingBoxConverter
 
 with open("/path/to/providers.json", "rb") as f:
     config = json.loads(f.read())
 
-extractor = NodeExtractor(
+converter = SingBoxConverter(
     providers_config=config,
     template="/path/to/template",
     fetch_sub_ua="clash.meta",
@@ -44,7 +44,7 @@ extractor = NodeExtractor(
     # auto_fix_empty_outbound=True,
 )
 
-extractor.export_config(
+converter.export_config(
     # path="/path/to/output/config"
 )
 
