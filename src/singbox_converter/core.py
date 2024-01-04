@@ -59,7 +59,7 @@ def list_local_templates():
 
 class SingBoxConverter:
     def __init__(
-            self, providers_config: dict | str, template: dict | str,
+            self, providers_config, template,
             is_console_mode=False, fetch_sub_ua=DEFAULT_UA,
             fetch_sub_fallback_ua=DEFAULT_FALLBACK_UA,
             auto_fix_empty_outbound=True,
