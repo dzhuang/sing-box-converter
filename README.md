@@ -21,7 +21,7 @@ vi providers.json
 #### Then run
 
 ```bash
-singbox_converter
+singbox_convert
 ```
 
 ## Use in python code systematically
