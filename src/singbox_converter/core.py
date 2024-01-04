@@ -103,12 +103,14 @@ class SingBoxConverter:
         self.auto_fix_empty_outbound = auto_fix_empty_outbound
         self.empty_outbound_node_tags = []
 
+        self._singbox_config = None
+
     @property
     def providers_config(self):
         if self._providers_config is None:
             self.get_and_validate_providers_config()
 
-        self.logger.debug(f"used providers_config: {self._providers_config}")
+        self.logger.debug(f"Used providers_config: \n{self._providers_config}")
         return self._providers_config
 
     @property
@@ -116,8 +118,19 @@ class SingBoxConverter:
         if self._template_config is None:
             self._template_config = self.get_template_config()
 
-        self.logger.debug(f"used template_config: {self._template_config}")
+        self.logger.debug(f"Used template_config: \n{self._template_config}")
         return self._template_config
+
+    @property
+    def singbox_config(self):
+        if self._singbox_config is None:
+            self._singbox_config = self.combine_to_config()
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            json_str = json.dumps(self._singbox_config, indent=2)
+            self.logger.debug(f"Generated config: \n{json_str}")
+
+        return self._singbox_config
 
     def get_and_validate_providers_config(self):
         if isinstance(self._providers_config_input, dict):
@@ -504,16 +517,16 @@ class SingBoxConverter:
         #     "address": "tls://1.1.1.1",
         #     "detour": ""
         # }
-        config_rules = self.template_config['route']['rules']
+        config_rules = self._singbox_config['route']['rules']
         outbound_dns = []
-        dns_rules = self.template_config['dns']['rules']
+        dns_rules = self._singbox_config['dns']['rules']
         asod = self.providers_config["auto_set_outbounds_dns"]
         for rule in config_rules:
             if rule['outbound'] not in ['block', 'dns-out']:
                 if rule['outbound'] != 'direct':
                     outbounds_dns_template = \
                         list(filter(lambda server: server['tag'] == asod["proxy"],
-                                    self.template_config['dns']['servers']))[0]
+                                    self._singbox_config['dns']['servers']))[0]
                     dns_obj = outbounds_dns_template.copy()
                     dns_obj['tag'] = rule['outbound'] + '_dns'
                     dns_obj['detour'] = rule['outbound']
@@ -544,10 +557,12 @@ class SingBoxConverter:
         for dr in dns_rules:
             if dr not in _dns_rules:
                 _dns_rules.append(dr)
-        self.template_config['dns']['rules'] = _dns_rules
-        self.template_config['dns']['servers'].extend(outbound_dns)
+        self._singbox_config['dns']['rules'] = _dns_rules
+        self._singbox_config['dns']['servers'].extend(outbound_dns)
 
     def combine_to_config(self):
+        self._singbox_config = self.template_config
+
         def action_keywords(_nodes, action, keywords):
             # filter将按顺序依次执行
             # "filter":[
@@ -600,8 +615,8 @@ class SingBoxConverter:
         data = self.nodes
 
         config_outbounds = (
-            self.template_config["outbounds"]
-            if self.template_config.get("outbounds") else None)
+            self._singbox_config["outbounds"]
+            if self._singbox_config.get("outbounds") else None)
 
         temp_outbounds = []
         if config_outbounds:
@@ -670,11 +685,11 @@ class SingBoxConverter:
                         del po['filter']
         for group in data:
             temp_outbounds.extend(data[group])
-        self.template_config['outbounds'] = config_outbounds + temp_outbounds
+        self._singbox_config['outbounds'] = config_outbounds + temp_outbounds
 
         # 自动配置路由规则到dns规则，避免dns泄露
         dns_tags = [server.get('tag') for server in
-                    self.template_config['dns']['servers']]
+                    self._singbox_config['dns']['servers']]
         asod = self.providers_config.get("auto_set_outbounds_dns")
         if (asod and asod.get('proxy')
                 and asod.get('direct')
@@ -687,13 +702,13 @@ class SingBoxConverter:
         self.validate_rule_set()
         self.validate_outbound_tags()
 
-        return self.template_config
+        return self._singbox_config
 
     def remove_empty_bound_nodes(self):
         if not self.auto_fix_empty_outbound:
             return
 
-        root_outbounds = deepcopy(self.template_config.get("outbounds", []))
+        root_outbounds = deepcopy(self._singbox_config.get("outbounds", []))
 
         while len(self.empty_outbound_node_tags):
             _tag = self.empty_outbound_node_tags.pop(0)
@@ -726,10 +741,10 @@ class SingBoxConverter:
 
             root_outbounds = new_root_outbounds
 
-        self.template_config["outbounds"] = root_outbounds
+        self._singbox_config["outbounds"] = root_outbounds
 
     def validate_rule_set(self):
-        route = self.template_config.get("route", {})
+        route = self._singbox_config.get("route", {})
         rules = route.get("rules", [])
 
         used_rule_set = set()
@@ -761,7 +776,7 @@ class SingBoxConverter:
             new_rule_set = [rs for rs in rule_set_config
                             if rs["tag"] not in unused_rule_sets]
 
-            self.template_config["route"]["rule_set"] = new_rule_set
+            self._singbox_config["route"]["rule_set"] = new_rule_set
 
             unused_rule_set_str = ", ".join(unused_rule_sets)
             self.logger.warning(
@@ -772,11 +787,11 @@ class SingBoxConverter:
         unknowns = []
         used_outbounds = set()
 
-        root_outbounds = self.template_config.get("outbounds", [])
+        root_outbounds = self._singbox_config.get("outbounds", [])
 
         available_ob_tags = [ob["tag"] for ob in root_outbounds]
 
-        route_config = self.template_config.get("route", {})
+        route_config = self._singbox_config.get("route", {})
         route_rules = route_config.get("rules", [])
         route_rules_outbounds = [rr["outbound"] for rr in route_rules]
         used_outbounds.update(route_rules_outbounds)
@@ -801,7 +816,7 @@ class SingBoxConverter:
 
             used_outbounds.add(final_route)
 
-        rule_sets = self.template_config.get("rule_set", [])
+        rule_sets = self._singbox_config.get("rule_set", [])
         rule_set_download_detour = [rs["download_detour"] for rs in rule_sets]
         used_outbounds.update(rule_set_download_detour)
 
@@ -814,7 +829,7 @@ class SingBoxConverter:
                 "value": list(unknown_rs_ob_tags),
                 "location": "download_detour"})
 
-        dns_servers = self.template_config.get("dns", {}).get("servers", [])
+        dns_servers = self._singbox_config.get("dns", {}).get("servers", [])
         dns_servers_detour = [
             ds.get("detour") for ds in dns_servers if "detour" in ds]
         used_outbounds.update(dns_servers_detour)
@@ -867,16 +882,15 @@ class SingBoxConverter:
     def export_config(self, path, nodes_only=False):
 
         if not nodes_only:
-            final_config = self.combine_to_config()
+            content = self.singbox_config
 
         else:
-            combined_contents = []
-            for sub_tag, contents in self.nodes.items():
+            content = []
+            for sub_tag, nodes in self.nodes.items():
                 # 遍历每个机场的内容
-                for content in contents:
+                for node_dict in nodes:
                     # 将内容添加到新列表中
-                    combined_contents.append(content)
-            final_config = combined_contents  # 只返回节点信息
+                    content.append(node_dict)
 
         with open(path, mode='w', encoding='utf-8') as f:
-            f.write(json.dumps(final_config, indent=2, ensure_ascii=False))
+            f.write(json.dumps(content, indent=2, ensure_ascii=False))

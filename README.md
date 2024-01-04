@@ -39,8 +39,11 @@ converter = SingBoxConverter(
     # auto_fix_empty_outbound=True,
 )
 
+print(converter.singbox_config)
+
 converter.export_config(
-    # path="/path/to/output/config"
+    path="/path/to/output/config",
+    # nodes_only=True
 )
 
 ```
