@@ -156,11 +156,9 @@ class NodeExtractor:
             with open(template, "rb") as f:
                 return json.loads(f.read())
         except Exception as e:
-            print(
+            raise InvalidTemplate(
                 f"Failed to load {template}: "
                 f"{type(e).__name__}: {str(e)}")
-
-        raise NoTemplateConfigured("No valid template configured")
 
     @property
     def nodes(self):
@@ -582,7 +580,6 @@ class NodeExtractor:
                         if os.path.exists(config_file_path):
                             os.remove(config_file_path)
                             self.console_print(f"已删除文件：{config_file_path}")
-                            # print(f"Các tập tin đã bị xóa: {config_file_path}")
                         sys.exit()
                     po['outbounds'] = t_o
                     if po.get('filter'):
@@ -795,10 +792,8 @@ class NodeExtractor:
                 os.remove(path)
                 self.console_print(f"已删除文件，并重新保存：\033[33m{path}\033[0m")
 
-                # print(f"File cấu hình đã được lưu vào: \033[33m{path}\033[0m")
             else:
                 self.console_print(f"文件不存在，正在保存：\033[33m{path}\033[0m")
-                # print(f"File không tồn tại, đang lưu tại: \033[33m{path}\033[0m")
 
             self.logger.info(
                 f"Config generated to {path}.")
@@ -808,7 +803,7 @@ class NodeExtractor:
 
         except Exception as e:
             self.console_print(f"保存配置文件时出错：{str(e)}")
-            # print(f"Lỗi khi lưu file cấu hình: {str(e)}")
+
             # 如果保存出错，尝试使用 config_file_path 再次保存
             config_file_path = os.path.join('/tmp', self.config_path)
             try:
@@ -823,13 +818,10 @@ class NodeExtractor:
                 with open(config_file_path, mode='w', encoding='utf-8') as f:
                     f.write(json.dumps(nodes, indent=2, ensure_ascii=False))
 
-                # print(f"配置文件已保存到 {config_file_path}")
             except Exception as e:
                 os.remove(config_file_path)
                 self.console_print(f"已删除文件：\033[33m{config_file_path}\033[0m")
-                # print(f"Các file đã bị xóa: \033[33m{config_file_path}\033[0m")
                 self.console_print(f"再次保存配置文件时出错：{str(e)}")
-                # print(f"Lỗi khi lưu lại file cấu hình: {str(e)}")
 
     def export_config(self, path=None):
         nodes_only = self.providers_config.get("Only-nodes", False)

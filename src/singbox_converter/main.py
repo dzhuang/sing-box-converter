@@ -4,7 +4,7 @@ import sys
 
 import requests
 
-from .dispatch import NodeExtractor, list_local_templates
+from .dispatch import NodeExtractor, NoTemplateConfigured, list_local_templates
 
 
 def update_local_config(local_host, path):
@@ -66,15 +66,14 @@ def main():
         with open('providers.json', "rb") as f:
             providers = json.loads(f.read())
 
-    if providers.get('config_template'):
-        config_template_path = providers['config_template'].strip()
-        print('选择: \033[33m' + config_template_path + '\033[0m')
-
-    else:
+    try:
+        extractor = NodeExtractor(
+            providers_config=providers, is_console_mode=True)
+    except NoTemplateConfigured:
+        print(f"Note: 'config_template' not configured, please select one")
         template_list = list_local_templates()
         if len(template_list) < 1:
             print('没有找到模板文件')
-            # print('Không tìm thấy file mẫu')
             sys.exit()
         display_template(template_list)
         uip = select_config_template(args, template_list)
@@ -82,7 +81,8 @@ def main():
 
         providers["config_template"] = uip
 
-    extractor = NodeExtractor(providers_config=providers, is_console_mode=True)
+        extractor = NodeExtractor(providers_config=providers, is_console_mode=True)
+
     # update_local_config('http://127.0.0.1:9090',providers['save_config_path'])
     extractor.export_config()
 
