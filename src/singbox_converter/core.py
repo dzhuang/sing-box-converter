@@ -9,7 +9,8 @@ from urllib.parse import urlparse
 import requests
 
 from .constants import BUILTIN_TEMPLATE_PATH, DEFAULT_FALLBACK_UA, DEFAULT_UA
-from .exceptions import (FailedToFetchSubscription, InvalidSubscriptionsConfig,
+from .exceptions import (FailedToFetchSubscription, FailedToParseSubscription,
+                         InvalidSubscriptionsConfig,
                          InvalidSubscriptionsJsonFile, InvalidTemplate,
                          NoTemplateConfigured, UnknownRuleSet)
 from .parsers import (HttpParser, HttpsParser, Hysteria2Parser, HysteriaParser,
@@ -302,26 +303,30 @@ class SingBoxConverter:
         self.console_print('处理: \033[31m' + file_path + '\033[0m')
         self.logger.info(f"Getting content from {file_path}")
 
-        file_extension = os.path.splitext(file_path)[1]
-        if file_extension.lower() in ['.yaml', '.yml']:
+        from ruamel.yaml import YAML, YAMLError
+
+        try:
             with open(file_path, 'rb') as file:
                 content = file.read()
 
-            import ruamel.yaml as yaml
-
-            yaml_data = dict(yaml.safe_load(content))
+            yaml = YAML(typ="safe", pure=True)
+            yaml_data = dict(yaml.load(content))
             share_links = []
 
             for proxy in yaml_data['proxies']:
                 share_links.append(clash2v2ray(proxy))
 
             return '\n'.join([line.strip() for line in share_links if line.strip()])
-        else:
+
+        except YAMLError:
             with open(file_path, "r") as f:
                 data = f.read()
 
             return "\n".join([
                 line.strip() for line in data.splitlines() if line.strip()])
+
+        except Exception as e:
+            return f"Error: {e}"
 
     def get_content_from_sub(self, subscribe, max_retries=6):
         url = subscribe["url"]
@@ -403,25 +408,38 @@ class SingBoxConverter:
     def get_nodes_from_sub(self, subscribe):
         url_or_path = subscribe["url"]
 
+        _content = None
+
         if url_or_path.startswith('sub://'):
             url_or_path = b64_decode(url_or_path[6:]).decode('utf-8')
 
-        url_str = urlparse(url_or_path)
-        if not url_str.scheme:
-            try:
-                _content = b64_decode(url_or_path).decode('utf-8')
-                data = self.parse_content(_content)
-                processed_list = []
-                for item in data:
-                    if isinstance(item, tuple):
-                        processed_list.extend([item[0], item[1]])  # 处理shadowtls
-                    else:
-                        processed_list.append(item)
-                return processed_list
-            except:
-                _content = self.get_content_from_file(url_or_path)
-        else:
-            _content = self.get_content_from_sub(subscribe)
+        try:
+            _content = self.get_content_from_file(url_or_path)
+        except Exception:
+            pass
+
+        if _content is None:
+            url_str = urlparse(url_or_path)
+            if not url_str.scheme:
+                try:
+                    _content = b64_decode(url_or_path).decode('utf-8')
+                    data = self.parse_content(_content)
+                    processed_list = []
+                    for item in data:
+                        # 处理shadowtls
+                        if isinstance(item, tuple):
+                            processed_list.extend([item[0], item[1]])
+                        else:
+                            processed_list.append(item)
+                    return processed_list
+                except:
+                    pass
+            else:
+                _content = self.get_content_from_sub(subscribe)
+
+        if _content is None:
+            raise FailedToParseSubscription(
+                f"Failed to get contents from subscription: \n{str(subscribe)}.")
 
         # self.console_print (_content)
         if isinstance(_content, dict):

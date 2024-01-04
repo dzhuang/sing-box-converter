@@ -6,6 +6,10 @@ class InvalidSubscriptionsConfig(Exception):
     pass
 
 
+class FailedToParseSubscription(Exception):
+    pass
+
+
 class NoTemplateConfigured(Exception):
     pass
 
