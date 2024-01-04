@@ -774,7 +774,8 @@ class NodeExtractor:
                 unknown_value = ', '.join(f'"{v}"' for v in unknown['value'])
                 msgs.append(
                     f"The following outbounds tags set in "
-                    f"{unknown['configure_item']} at '{unknown['location']}': "
+                    f"{unknown['configure_item']} at '{unknown['location']}' "
+                    f"are unknown: "
                     f"{unknown_value}")
 
             raise InvalidTemplate("\n".join(msgs))
