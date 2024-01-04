@@ -9,6 +9,9 @@ from urllib.parse import urlparse
 import requests
 
 from .constants import BUILTIN_TEMPLATE_PATH, DEFAULT_FALLBACK_UA, DEFAULT_UA
+from .exceptions import (FailedToFetchSubscription, InvalidSubscriptionsConfig,
+                         InvalidSubscriptionsJsonFile, InvalidTemplate,
+                         NoTemplateConfigured, UnknownRuleSet)
 from .parsers import (HttpParser, HttpsParser, Hysteria2Parser, HysteriaParser,
                       SocksParser, SSParser, SSRParser, TrojanParser,
                       TUICParser, VlessParser, VmessParser, WireGuardParser)
@@ -43,30 +46,6 @@ protocol_klass_map = {
 }
 
 
-class InvalidSubscriptionsJsonFile(Exception):
-    pass
-
-
-class InvalidSubscriptionsConfig(Exception):
-    pass
-
-
-class NoTemplateConfigured(Exception):
-    pass
-
-
-class InvalidTemplate(Exception):
-    pass
-
-
-class UnknownRuleSet(Exception):
-    pass
-
-
-class FailedToFetchSubscription(Exception):
-    pass
-
-
 def list_local_templates():
     template_dir = os.path.join(CURRENT_DIRECTORY, BUILTIN_TEMPLATE_PATH)
     template_files = os.listdir(template_dir)
@@ -79,7 +58,7 @@ def list_local_templates():
 
 class SingBoxConverter:
     def __init__(
-            self, providers_config: dict | None = None, template=None,
+            self, providers_config: dict | str, template: dict | str,
             is_console_mode=False, fetch_sub_ua=DEFAULT_UA,
             fetch_sub_fallback_ua=DEFAULT_FALLBACK_UA,
             auto_fix_empty_outbound=True,
@@ -89,11 +68,11 @@ class SingBoxConverter:
         """
         :param dict | None providers_config: Configuration for providers. 
             See example at `providers example <https://raw.githubusercontent.com/dzhuang/sing-box-subscribe/main/providers-example.json>`_.
-        :param template: An integer representing the index of built-in templates 
+        :param template: A 0-based integer representing the index of built-in templates 
           (in alphabetical order), a URL of the template, or a file path to the 
-          template. See available templates at `built-in templates <https://github.com/dzhuang/sing-box-subscribe/tree/package/src/singbox_converter/config_template>`_.
-          Overrides configuration in `providers_config`.
-        :type template: int, str, or None
+          template, or a dict as the template config itself.
+          See available templates at `built-in templates <https://github.com/dzhuang/sing-box-subscribe/tree/package/src/singbox_converter/config_template>`_.
+        :type template: int, str, dict, or None
         :param bool is_console_mode: Specifies if the instance is running in console mode.
         :param str fetch_sub_ua: The User-Agent string used when fetching 
           subscriptions. Can be overridden by `User-Agent` value in `providers_config`.
@@ -113,7 +92,9 @@ class SingBoxConverter:
         self._providers_config = None
         self._providers_config_input = providers_config
 
-        self.template_config = self.get_template_config(template)
+        self._template_config = None
+        self._template_config_input = template
+
         self._nodes = None
         self.is_console_mode = is_console_mode
         self.fetch_sub_ua = fetch_sub_ua
@@ -126,7 +107,17 @@ class SingBoxConverter:
     def providers_config(self):
         if self._providers_config is None:
             self.get_and_validate_providers_config()
+
+        self.logger.debug(f"used providers_config: {self._providers_config}")
         return self._providers_config
+
+    @property
+    def template_config(self):
+        if self._template_config is None:
+            self._template_config = self.get_template_config()
+
+        self.logger.debug(f"used template_config: {self._template_config}")
+        return self._template_config
 
     def get_and_validate_providers_config(self):
         if isinstance(self._providers_config_input, dict):
@@ -208,12 +199,16 @@ class SingBoxConverter:
         if self.is_console_mode:
             print(str_to_print)
 
-    def get_template_config(self, template):
-        if template is None:
+    def get_template_config(self):
+        if self._template_config_input is None:
             raise NoTemplateConfigured("No valid template configured")
 
+        # todo: validate template
+        if isinstance(self._template_config_input, dict):
+            return self._template_config_input
+
         try:
-            template_index = int(template)
+            template_index = int(self._template_config_input)
             _template_list = list_local_templates()
 
             file_path = (
@@ -221,6 +216,8 @@ class SingBoxConverter:
                     CURRENT_DIRECTORY,
                     BUILTIN_TEMPLATE_PATH,
                     f"{_template_list[template_index]}.json"))
+
+            self.logger.info(f"Used built-in template '{file_path}'.")
 
             with open(file_path, "rb") as _f:
                 return json.loads(_f.read())
@@ -235,15 +232,15 @@ class SingBoxConverter:
                 return resp.json()
             except Exception as e:
                 raise InvalidTemplate(
-                    f"Failed to load template: {template}: "
+                    f"Failed to load template: {self._template_config_input}: "
                     f"{type(e).__name__}: {str(e)}")
 
         try:
-            with open(template, "rb") as f:
+            with open(self._template_config_input, "rb") as f:
                 return json.loads(f.read())
         except Exception as e:
             raise InvalidTemplate(
-                f"Failed to load {template}: "
+                f"Failed to load {self._template_config_input}: "
                 f"{type(e).__name__}: {str(e)}")
 
     @property

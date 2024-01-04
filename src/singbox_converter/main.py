@@ -2,14 +2,14 @@ import argparse
 import os
 import sys
 
-from .dispatch import SingBoxConverter, list_local_templates
+from .core import SingBoxConverter, list_local_templates
 
 
 def display_template(template_list):
     color_code = [31, 32, 33, 34, 35, 36, 91, 92, 93, 94, 95, 96]
 
     for idx, tmpl in enumerate(template_list):
-        print_str = f"\033[{color_code[idx]}m {idx + 1}: {tmpl} \033[0m"
+        print_str = f"\033[{color_code[idx]}m {idx}: {tmpl} \033[0m"
         print(print_str)
 
 
