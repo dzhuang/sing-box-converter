@@ -604,15 +604,13 @@ class NodeExtractor:
         self.remove_empty_bound_nodes()
 
         self.validate_rule_set()
+        self.validate_outbound_tags()
 
         return self.template_config
 
     def remove_empty_bound_nodes(self):
         if not self.auto_fix_empty_outbound:
             return
-
-        # todo: raise error when the node is set in dns servers and download_detour
-        #       dns_config = nodes.get("dns", {})
 
         root_outbounds = deepcopy(self.template_config.get("outbounds", []))
 
@@ -688,6 +686,101 @@ class NodeExtractor:
             self.logger.warning(
                 f"The following rule_set were not referenced and were "
                 f"removed from the generated config: {unused_rule_set_str}")
+
+    def validate_outbound_tags(self):
+        unknowns = []
+        used_outbounds = set()
+
+        root_outbounds = self.template_config.get("outbounds", [])
+
+        available_ob_tags = [ob["tag"] for ob in root_outbounds]
+
+        route_config = self.template_config.get("route", {})
+        route_rules = route_config.get("rules", [])
+        route_rules_outbounds = [rr["outbound"] for rr in route_rules]
+        used_outbounds.update(route_rules_outbounds)
+
+        unknown_rr_ob_tags = (
+            set(route_rules_outbounds).difference(set(available_ob_tags)))
+
+        if unknown_rr_ob_tags:
+            unknowns.append({
+                "configure_item": "router",
+                "value": list(unknown_rr_ob_tags),
+                "location": "outbound"})
+
+        final_route = route_config.get("final", "").strip()
+        if final_route:
+            assert isinstance(final_route, str)
+            if final_route not in available_ob_tags:
+                unknowns.append({
+                    "configure_item": "router",
+                    "value": list(unknown_rr_ob_tags),
+                    "location": "final"})
+
+            used_outbounds.add(final_route)
+
+        rule_sets = self.template_config.get("rule_set", [])
+        rule_set_download_detour = [rs["download_detour"] for rs in rule_sets]
+        used_outbounds.update(rule_set_download_detour)
+
+        unknown_rs_ob_tags = (
+            set(rule_set_download_detour).difference(set(available_ob_tags)))
+
+        if unknown_rr_ob_tags:
+            unknowns.append({
+                "configure_item": "rule_set",
+                "value": list(unknown_rs_ob_tags),
+                "location": "download_detour"})
+
+        dns_servers = self.template_config.get("dns", {}).get("servers", [])
+        dns_servers_detour = [
+            ds.get("detour") for ds in dns_servers if "detour" in ds]
+        used_outbounds.update(dns_servers_detour)
+
+        unknown_ds_ob_tags = (
+            set(dns_servers_detour).difference(set(available_ob_tags)))
+
+        if unknown_ds_ob_tags:
+            unknowns.append({
+                "configure_item": "dns['servers']",
+                "value": list(unknown_ds_ob_tags),
+                "location": "detour"})
+
+        for ob in root_outbounds:
+            if "outbounds" not in ob:
+                continue
+            sub_outbounds = ob["outbounds"]
+            _unknown_sub_ob_tags = (
+                set(sub_outbounds).difference(set(available_ob_tags)))
+
+            if _unknown_sub_ob_tags:
+                unknowns.append({
+                    "configure_item": f"outbounds item tagged '{ob['tag']}'",
+                    "value": _unknown_sub_ob_tags,
+                    "location": "outbounds"})
+
+            used_outbounds.update(sub_outbounds)
+
+        unused_outbounds = set(available_ob_tags).difference(used_outbounds)
+
+        if unused_outbounds:
+            unused_outbounds_str = ", ".join(
+                [f'"{tag}"' for tag in unused_outbounds])
+            self.logger.warning(
+                f"The following outbound tags were not used: "
+                f"{unused_outbounds_str}")
+
+        if unknowns:
+            msgs = []
+            for unknown in unknowns:
+                unknown_value = ', '.join(f'"{v}"' for v in unknown['value'])
+                msgs.append(
+                    f"The following outbounds tags set in "
+                    f"{unknown['configure_item']} at '{unknown['location']}': "
+                    f"{unknown_value}")
+
+            raise InvalidTemplate("\n".join(msgs))
 
     def write_config(self, nodes, path=None):
         path = path or self.config_path
