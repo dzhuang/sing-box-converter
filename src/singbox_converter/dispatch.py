@@ -4,7 +4,6 @@ import os
 import re
 import sys
 from copy import deepcopy
-from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
@@ -44,6 +43,14 @@ protocol_klass_map = {
 }
 
 
+class InvalidSubscriptionsJsonFile(Exception):
+    pass
+
+
+class InvalidSubscriptionsConfig(Exception):
+    pass
+
+
 class NoTemplateConfigured(Exception):
     pass
 
@@ -71,15 +78,14 @@ def list_local_templates():
 
 
 class SingBoxConverter:
-    def __init__(self, providers_config: dict | None = None, template=None,
-                 is_console_mode=False, fetch_sub_ua=DEFAULT_UA,
-                 fetch_sub_fallback_ua=DEFAULT_FALLBACK_UA,
-                 export_config_folder="",
-                 export_config_name="config.json",
-                 auto_fix_empty_outbound=True,
-                 log_level=logging.INFO,
-                 disable_log=False,
-                 ):
+    def __init__(
+            self, providers_config: dict | None = None, template=None,
+            is_console_mode=False, fetch_sub_ua=DEFAULT_UA,
+            fetch_sub_fallback_ua=DEFAULT_FALLBACK_UA,
+            auto_fix_empty_outbound=True,
+            log_level=logging.INFO,
+            disable_log=False,
+    ):
         """
         :param dict | None providers_config: Configuration for providers. 
             See example at `providers example <https://raw.githubusercontent.com/dzhuang/sing-box-subscribe/main/providers-example.json>`_.
@@ -93,10 +99,6 @@ class SingBoxConverter:
           subscriptions. Can be overridden by `User-Agent` value in `providers_config`.
         :param str fetch_sub_fallback_ua: The fallback User-Agent used when 
           requests fail with a 403 error.
-        :param str export_config_folder: The folder for exporting configuration. 
-          Defaults to an empty string.
-        :param str export_config_name: The name of the exported configuration file. 
-          Defaults to "config.json".
         :param bool auto_fix_empty_outbound: Whether to automatically remove 
           outbounds with no nodes. Defaults to `True`.
         :param log_level: The logging level. Defaults to `logging.INFO`.
@@ -105,25 +107,86 @@ class SingBoxConverter:
           Defaults to `False`.
         """  # noqa
 
-        if template is not None:
-            providers_config["config_template"] = template
+        self.logger = logging.getLogger(__name__)
+        self.config_log(log_level, disable_log)
 
-        self.providers_config = providers_config
-        self.template_config = self.get_template_config()
+        self._providers_config = None
+        self._providers_config_input = providers_config
+
+        self.template_config = self.get_template_config(template)
         self._nodes = None
         self.is_console_mode = is_console_mode
         self.fetch_sub_ua = fetch_sub_ua
         self.fetch_sub_fallback_ua = fetch_sub_fallback_ua
         self._session = None
-        self.config_path = self.providers_config.get(
-            "save_config_path",
-            os.path.join(export_config_folder, export_config_name)
-        )
         self.auto_fix_empty_outbound = auto_fix_empty_outbound
         self.empty_outbound_node_tags = []
 
-        self.logger = logging.getLogger(__name__)
-        self.config_log(log_level, disable_log)
+    @property
+    def providers_config(self):
+        if self._providers_config is None:
+            self.get_and_validate_providers_config()
+        return self._providers_config
+
+    def get_and_validate_providers_config(self):
+        if isinstance(self._providers_config_input, dict):
+            return self.validate_providers_config(
+                p_config=self._providers_config_input)
+
+        assert isinstance(self._providers_config_input, str), \
+            (f"providers_config must be a dict or a string, "
+             f"while got a {type(self._providers_config_input)}")
+
+        try:
+            with open(self._providers_config_input, "rb") as f:
+                p_config = json.loads(f.read())
+        except Exception as e:
+            raise InvalidSubscriptionsJsonFile(
+                f"Failed to load {self._providers_config_input}: "
+                f"{type(e).__name__}: {str(e)}")
+        else:
+            return self.validate_providers_config(p_config)
+
+    def validate_providers_config(self, p_config):
+        assert isinstance(p_config, dict)
+
+        deprecated_keys = []
+        for key in ["save_config_path", "auto_backup", "Only-nodes"]:
+            if key in p_config.keys():
+                if p_config.pop(key) is not None:
+                    deprecated_keys.append(key)
+
+        if deprecated_keys:
+            deprecated_keys_str = ", ".join([f'"{k}"' for k in deprecated_keys])
+            self.logger.warning(
+                f"The following keys were deprecated for providers json file"
+                f"and will be ignored: {deprecated_keys_str}.")
+
+        subscribes = p_config.get("subscribes", [])
+        if not subscribes:
+            raise InvalidSubscriptionsConfig(
+                "The providers config must contain non empty 'subscribes'.")
+
+        actual_subscribes = []
+
+        for i, sub in enumerate(subscribes):
+            if not isinstance(sub, dict):
+                raise InvalidSubscriptionsConfig(
+                    f"providers 'subscribes' {i+1} is not a dict, while got: "
+                    f"{str(sub)}.")
+            if "url" not in sub:
+                raise InvalidSubscriptionsConfig(
+                    f"providers 'subscribes' {i+1} must contain a 'url' value "
+                    f"denoting the URL or local_path, while got: {str(sub)}.")
+
+            sub.setdefault("tag", "")
+            sub.setdefault("enabled", True)
+            sub.setdefault("emoji", "")
+            sub.setdefault("prefix", "")
+            actual_subscribes.append(sub)
+
+        p_config["subscribes"] = actual_subscribes
+        self._providers_config = p_config
 
     def config_log(self, level, disable_log):
         if disable_log:
@@ -145,8 +208,7 @@ class SingBoxConverter:
         if self.is_console_mode:
             print(str_to_print)
 
-    def get_template_config(self):
-        template = self.providers_config.get("config_template")
+    def get_template_config(self, template):
         if template is None:
             raise NoTemplateConfigured("No valid template configured")
 
@@ -243,12 +305,13 @@ class SingBoxConverter:
             for proxy in yaml_data['proxies']:
                 share_links.append(clash2v2ray(proxy))
 
-            return '\n'.join([l.strip() for l in share_links if l.strip()])
+            return '\n'.join([line.strip() for line in share_links if line.strip()])
         else:
             with open(file_path, "r") as f:
                 data = f.read()
 
-            return "\n".join([l.strip() for l in data.splitlines() if l.strip()])
+            return "\n".join([
+                line.strip() for line in data.splitlines() if line.strip()])
 
     def get_content_from_sub(self, subscribe, max_retries=6):
         url = subscribe["url"]
@@ -804,61 +867,19 @@ class SingBoxConverter:
 
             raise InvalidTemplate("\n".join(msgs))
 
-    def write_config(self, nodes, path=None):
-        path = path or self.config_path
+    def export_config(self, path, nodes_only=False):
 
-        try:
-            if ('auto_backup' in self.providers_config
-                    and self.providers_config['auto_backup']):
-                now = datetime.now().strftime('%Y%m%d%H%M%S')
-                if os.path.exists(path):
-                    os.rename(path, f'{path}.{now}.bak')
-            if os.path.exists(path):
-                os.remove(path)
-                self.console_print(f"已删除文件，并重新保存：\033[33m{path}\033[0m")
-
-            else:
-                self.console_print(f"文件不存在，正在保存：\033[33m{path}\033[0m")
-
-            self.logger.info(
-                f"Config generated to {path}.")
-
-            with open(path, mode='w', encoding='utf-8') as f:
-                f.write(json.dumps(nodes, indent=2, ensure_ascii=False))
-
-        except Exception as e:
-            self.console_print(f"保存配置文件时出错：{str(e)}")
-
-            # 如果保存出错，尝试使用 config_file_path 再次保存
-            config_file_path = os.path.join('/tmp', self.config_path)
-            try:
-                if os.path.exists(config_file_path):
-                    os.remove(config_file_path)
-                    self.console_print(
-                        f"已删除文件，并重新保存：\033[33m{config_file_path}\033[0m")
-                else:
-                    self.console_print(
-                        f"文件不存在，正在保存：\033[33m{config_file_path}\033[0m")
-
-                with open(config_file_path, mode='w', encoding='utf-8') as f:
-                    f.write(json.dumps(nodes, indent=2, ensure_ascii=False))
-
-            except Exception as e:
-                os.remove(config_file_path)
-                self.console_print(f"已删除文件：\033[33m{config_file_path}\033[0m")
-                self.console_print(f"再次保存配置文件时出错：{str(e)}")
-
-    def export_config(self, path=None):
-        nodes_only = self.providers_config.get("Only-nodes", False)
         if not nodes_only:
             final_config = self.combine_to_config()
-            return self.write_config(final_config, path)
 
-        combined_contents = []
-        for sub_tag, contents in self.nodes.items():
-            # 遍历每个机场的内容
-            for content in contents:
-                # 将内容添加到新列表中
-                combined_contents.append(content)
-        final_config = combined_contents  # 只返回节点信息
-        return self.write_config(final_config, path)
+        else:
+            combined_contents = []
+            for sub_tag, contents in self.nodes.items():
+                # 遍历每个机场的内容
+                for content in contents:
+                    # 将内容添加到新列表中
+                    combined_contents.append(content)
+            final_config = combined_contents  # 只返回节点信息
+
+        with open(path, mode='w', encoding='utf-8') as f:
+            f.write(json.dumps(final_config, indent=2, ensure_ascii=False))
