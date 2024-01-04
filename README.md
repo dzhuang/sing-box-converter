@@ -47,4 +47,6 @@ converter.export_config(
 
 
 ## Thanks
-Credit goes to [Toperlock/sing-box-subscribe](https://github.com/Toperlock/sing-box-subscribe).
+Credit goes to:
+- [Toperlock/sing-box-subscribe](https://github.com/Toperlock/sing-box-subscribe)
+- [gg4924/sing-box-subscribe](https://github.com/gg4924/sing-box-subscribe)
