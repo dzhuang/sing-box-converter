@@ -68,11 +68,11 @@ class SingBoxConverter:
     ):
         """
         :param dict | None providers_config: Configuration for providers. 
-            See example at `providers example <https://raw.githubusercontent.com/dzhuang/sing-box-subscribe/main/providers-example.json>`_.
+            See example at `providers example <https://raw.githubusercontent.com/dzhuang/sing-box-converter/main/providers-example.json>`_.
         :param template: A 0-based integer representing the index of built-in templates 
           (in alphabetical order), a URL of the template, or a file path to the 
           template, or a dict as the template config itself.
-          See available templates at `built-in templates <https://github.com/dzhuang/sing-box-subscribe/tree/package/src/singbox_converter/config_template>`_.
+          See available templates at `built-in templates <https://github.com/dzhuang/sing-box-converter/tree/main/src/singbox_converter/config_template>`_.
         :type template: int, str, dict, or None
         :param bool is_console_mode: Specifies if the instance is running in console mode.
         :param str fetch_sub_ua: The User-Agent string used when fetching 
