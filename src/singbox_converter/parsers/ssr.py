@@ -3,6 +3,10 @@ from .base import ParserBase
 
 
 class SSRParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "shadowsocksr"
+
     def parse(self, data):
         info = data[6:]
         if not info or info.isspace():
@@ -12,7 +16,7 @@ class SSRParser(ParserBase):
         if len(parts) != 6:
             return None
         node = {
-            'tag':None,
+            'tag': None,
             'type':'shadowsocksr',
             'server': parts[0],
             'server_port': int(parts[1]),
@@ -30,5 +34,5 @@ class SSRParser(ParserBase):
             if keyname in pdict.keys():
                 keyname = pdict[keyname]
                 node[keyname] = tool.b64_decode(key_value[1]).decode('utf-8')
-        node['tag'] = node['tag'] if node.get('tag') else tool.generate_random_name() + '_shadowsocksr'
+        node['tag'] = node.get('tag', self.random_name)
         return node

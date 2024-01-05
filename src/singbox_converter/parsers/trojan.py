@@ -1,11 +1,14 @@
 import re
 from urllib.parse import parse_qs, unquote, urlparse
 
-from .. import tool
 from .base import ParserBase
 
 
 class TrojanParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "trojan"
+
     def parse(self, data):
         info = data[:]
         server_info = urlparse(info)
@@ -20,7 +23,7 @@ class TrojanParser(ParserBase):
             for k, v in parse_qs(server_info.query).items()
         )
         node = {
-            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_trojan',
+            'tag': unquote(server_info.fragment) or self.random_name,
             'type': 'trojan',
             'server': re.sub(r"\[|\]", "", _netloc[1].rsplit(":", 1)[0]),
             'server_port': int(_netloc[1].rsplit(":", 1)[1].split("/")[0]),

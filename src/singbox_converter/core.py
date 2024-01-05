@@ -18,7 +18,7 @@ from .parsers import (HttpParser, HttpsParser, Hysteria2Parser, HysteriaParser,
                       TUICParser, VlessParser, VmessParser, WireGuardParser)
 from .parsers.base import ParserBase
 from .parsers.clash2base64 import clash2v2ray
-from .tool import (b64_decode, get_protocol, rename_country)
+from .tool import b64_decode, get_protocol, rename_country
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

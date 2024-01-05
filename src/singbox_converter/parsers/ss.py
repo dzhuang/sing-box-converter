@@ -8,12 +8,16 @@ from .base import ParserBase
 
 
 class SSParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "shadowsocks"
+
     def parse(self, data):
         param = data[5:]
         if not param or param.isspace():
             return None
         node = {
-            'tag': tool.generate_random_name() + '_shadowsocks',
+            'tag': self.random_name,
             'type':'shadowsocks',
             'server':None,
             'server_port':0,

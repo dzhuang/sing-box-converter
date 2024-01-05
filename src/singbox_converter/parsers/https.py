@@ -6,6 +6,10 @@ from .base import ParserBase
 
 
 class HttpsParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "http"
+
     def parse(self, data):
         print(data)
         info = data[:]
@@ -16,7 +20,7 @@ class HttpsParser(ParserBase):
             remark = (server_info.netloc).rsplit("/#", 1)
         _netloc = remark[0].rsplit("@", 1)
         node = {
-            'tag': unquote(remark[1]) if len(remark) > 1 else tool.generate_random_name() + '_http',
+            'tag': unquote(remark[1]) if len(remark) > 1 else self.random_name,
             'type': 'http',
             'server': re.sub(r"\[|\]", "", _netloc[-1].rsplit(":", 1)[0]),
             'server_port': int(_netloc[-1].rsplit(":", 1)[1]),

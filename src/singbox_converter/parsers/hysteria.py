@@ -1,11 +1,14 @@
 import re
 from urllib.parse import parse_qs, unquote, urlparse
 
-from .. import tool
 from .base import ParserBase
 
 
 class HysteriaParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "hysteria"
+
     def parse(self, data):
         info = data[:]
         server_info = urlparse(info)
@@ -14,7 +17,7 @@ class HysteriaParser(ParserBase):
             for k, v in parse_qs(server_info.query).items()
         )
         node = {
-            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_hysteria',
+            'tag': unquote(server_info.fragment) or self.random_name,
             'type': 'hysteria',
             'server': re.sub(r"\[|\]", "", server_info.netloc.rsplit(":", 1)[0]),
             'server_port': int(server_info.netloc.rsplit(":", 1)[1]),

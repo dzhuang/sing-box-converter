@@ -7,6 +7,10 @@ from .base import ParserBase
 
 
 class VmessParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "vmess"
+
     def parse(self, data):
         info = data[8:]
         if not info or info.isspace():
@@ -20,7 +24,7 @@ class VmessParser(ParserBase):
                 )
                 _path = tool.b64_decode(server_info.path).decode('utf-8').split("@")
                 node = {
-                    'tag': netquery.get('remarks', tool.generate_random_name() + '_vmess'),
+                    'tag': netquery.get('remarks', self.random_name),
                     'type': 'vmess',
                     'server': _path[1].split(":")[0],
                     'server_port': int(_path[1].split(":")[1]),
@@ -59,9 +63,8 @@ class VmessParser(ParserBase):
             item = json.loads(proxy_str)
         except:
             return None
-        content = item.get('ps').strip() if item.get('ps') else tool.generate_random_name() + '_vmess'
         node = {
-            'tag': content,
+            'tag': item.get('ps').strip() if item.get('ps') else self.random_name,
             'type': 'vmess',
             'server': item.get('add'),
             'server_port': int(item.get('port')),

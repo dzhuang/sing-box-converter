@@ -24,13 +24,6 @@ def b64_decode(_str):
     return base64.urlsafe_b64decode(_str)
 
 
-def generate_random_name(length=8):
-    name = ''
-    for i in range(length):
-        name += random.choice(string.ascii_letters+string.digits)
-    return name
-
-
 def get_protocol(s):
     protocol_map = {
         'hy2': 'hysteria2',

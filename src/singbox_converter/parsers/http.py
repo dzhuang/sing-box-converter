@@ -6,6 +6,10 @@ from .base import ParserBase
 
 
 class HttpParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "http"
+
     def parse(self, data):
         info = data[:]
         server_info = urlparse(info)
@@ -29,7 +33,7 @@ class HttpParser(ParserBase):
         else:
            server_port = netloc
         node = {
-            'tag': remark or tool.generate_random_name() + '_http',
+            'tag': remark or self.random_name,
             'type': 'http',
             'server': re.sub(r"\[|\]", "", server_port.rsplit(":", 1)[0]),
             'server_port': int(server_port.rsplit(":", 1)[1]),

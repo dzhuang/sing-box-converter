@@ -6,6 +6,10 @@ from .base import ParserBase
 
 
 class VlessParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "vless"
+
     def parse(self, data):
         info = data[:]
         server_info = urlparse(info)
@@ -19,7 +23,7 @@ class VlessParser(ParserBase):
             for k, v in parse_qs(server_info.query).items()
         )
         node = {
-            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_vless',
+            'tag': unquote(server_info.fragment) or self.random_name,
             'type': 'vless',
             'server': re.sub(r"\[|\]", "", _netloc[1].rsplit(":", 1)[0]),
             'server_port': int(_netloc[1].rsplit(":", 1)[1]),

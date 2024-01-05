@@ -6,11 +6,15 @@ from .base import ParserBase
 
 
 class SocksParser(ParserBase):
+    @property
+    def protocol_type(self):
+        return "socks"
+
     def parse(self, data):
         info = data[:]
         server_info = urlparse(info)
         node = {
-            'tag': unquote(server_info.fragment) or tool.generate_random_name() + '_socks',
+            'tag': unquote(server_info.fragment) or self.random_name,
             'type': 'socks',
             "version": "5",
             'udp_over_tcp': {}
