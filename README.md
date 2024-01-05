@@ -10,7 +10,7 @@ pip install PySingBoxConverter
 
 ## Use in commandline
 
-#### Create a `providers.json` from [`providers-example.json`](https://raw.githubusercontent.com/dzhuang/sing-box-subscribe/main/providers-example.json):
+#### Create a `providers.json` from [`providers-example.json`](https://raw.githubusercontent.com/dzhuang/sing-box-converter/main/src/singbox_converter/providers-example.json):
 
 ```bash
 cp providers-example.json providers.json
