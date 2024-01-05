@@ -18,8 +18,7 @@ from .parsers import (HttpParser, HttpsParser, Hysteria2Parser, HysteriaParser,
                       TUICParser, VlessParser, VmessParser, WireGuardParser)
 from .parsers.base import ParserBase
 from .parsers.clash2base64 import clash2v2ray
-from .tool import (b64_decode, get_protocol, proDuplicateNodeName,
-                   rename_country)
+from .tool import (b64_decode, get_protocol, rename_country)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -486,6 +485,21 @@ class SingBoxConverter:
                 for node in nodes:
                     node['tag'] = rename_country(node['tag'])
 
+        def ensure_unique_tags(nodes):
+            # rename tags to avoid duplicate
+            seen_tags = set()
+            for key, nodelist in nodes.items():
+                for node in nodelist:
+                    original_tag = node['tag']
+                    if original_tag in seen_tags:
+                        index = 2
+                        new_tag = f"{original_tag}{index}"
+                        while new_tag in seen_tags:
+                            index += 1
+                            new_tag = f"{original_tag}{index}"
+                        node['tag'] = new_tag
+                    seen_tags.add(node['tag'])
+
         _nodes = {}
 
         _providers = self.providers_config.get("subscribes", [])
@@ -506,7 +520,7 @@ class SingBoxConverter:
                 self.logger.warning(
                     f"No nodes found in {subscribe['tag']}, skipped.")
 
-        proDuplicateNodeName(_nodes)
+        ensure_unique_tags(_nodes)
         return _nodes
 
     def set_proxy_rule_dns(self):
