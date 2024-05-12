@@ -405,6 +405,21 @@ class SingBoxConverter:
                             )
                 n_retries += 1
 
+    def get_content_from_url(self, subscribe):
+        url = subscribe["url"]
+        user_agent = subscribe.get('User-Agent', self.fetch_sub_ua)
+        response = self.session.get(
+            url, headers={"User-Agent": user_agent}
+        )
+        if response.status_code != 200:
+            raise FailedToFetchSubscription()
+
+        from ruamel.yaml import YAML
+
+        yaml = YAML(typ="safe", pure=True)
+        yaml_data = dict(yaml.load(response.text))
+        return yaml_data
+
     def get_nodes_from_sub(self, subscribe):
         url_or_path = subscribe["url"]
 
@@ -413,10 +428,21 @@ class SingBoxConverter:
         if url_or_path.startswith('sub://'):
             url_or_path = b64_decode(url_or_path[6:]).decode('utf-8')
 
-        try:
-            _content = self.get_content_from_file(url_or_path)
-        except Exception:
-            pass
+        if os.path.exists(url_or_path):
+            try:
+                _content = self.get_content_from_file(url_or_path)
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to load '{url_or_path}' as a subscription file: "
+                    f"{type(e).__name__}: {str(e)}")
+        else:
+            if url_or_path.startswith(('http://', 'https://')):
+                try:
+                    _content = self.get_content_from_url(subscribe)
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to load '{url_or_path}' as a subscription url: "
+                        f"{type(e).__name__}: {str(e)}")
 
         if _content is None:
             url_str = urlparse(url_or_path)
