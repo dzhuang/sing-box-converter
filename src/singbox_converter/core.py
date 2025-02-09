@@ -837,7 +837,8 @@ class SingBoxConverter:
 
         route_config = self._singbox_config.get("route", {})
         route_rules = route_config.get("rules", [])
-        route_rules_outbounds = [rr["outbound"] for rr in route_rules]
+        route_rules_outbounds = [
+            rr["outbound"] for rr in route_rules if "outbound" in rr]
         used_outbounds.update(route_rules_outbounds)
 
         unknown_rr_ob_tags = (
